@@ -1,4 +1,4 @@
-import type { Source } from '../../../shared/src/types';
+import type { Source } from '@shared/types';
 
 export interface EmbeddingProvider {
   embed(text: string): Promise<number[]>;

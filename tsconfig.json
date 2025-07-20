@@ -13,13 +13,12 @@
     "allowJs": true,
     "baseUrl": ".",
     "paths": {
-      "@shared/*": ["./packages/shared/src/*"],
-      "@rag/*": ["./packages/rag/src/*"]
+      "@shared/*": ["./src/packages/shared/src/*"],
+      "@rag/*": ["./src/packages/rag/src/*"]
     }
   },
   "include": [
-    "src/apps/**/*",
-    "packages/**/*"
+    "src/**/*"
   ],
   "exclude": [
     "node_modules",
