@@ -1,7 +1,7 @@
 import type { Source } from '@shared/types';
 
 export interface VectorStore {
-  addDocument(content: string, metadata: Record<string, any>): Promise<string>;
+  addDocument(content: string, metadata: Record<string, any>, embedding?: number[]): Promise<string>;
   search(embedding: number[], limit?: number): Promise<Source[]>;
   deleteDocument(id: string): Promise<void>;
 }
@@ -9,12 +9,8 @@ export interface VectorStore {
 export class InMemoryVectorStore implements VectorStore {
   private documents: Map<string, { content: string; embedding: number[]; metadata: Record<string, any> }> = new Map();
 
-  async addDocument(content: string, metadata: Record<string, any>): Promise<string> {
+  async addDocument(content: string, metadata: Record<string, any>, embedding: number[] = []): Promise<string> {
     const id = Math.random().toString(36).substr(2, 9);
-    
-    // Note: In a real implementation, you would generate embeddings here
-    // For now, we'll use a placeholder
-    const embedding: number[] = [];
     
     this.documents.set(id, {
       content,
@@ -58,3 +54,5 @@ export class InMemoryVectorStore implements VectorStore {
     return dotProduct / (magnitudeA * magnitudeB);
   }
 }
+
+export * from './postgres-vectorstore';

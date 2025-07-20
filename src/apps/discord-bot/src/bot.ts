@@ -1,12 +1,17 @@
 import { Client, GatewayIntentBits, Events } from 'discord.js';
 import { validateEnvironment } from '@shared/utils';
+import { createDatabaseConnection } from '@shared/database';
 import { createApiServer } from './api';
 import { RagRetriever } from '@rag/retrieval';
 import { OpenAIEmbeddings } from '@rag/embeddings';
-import { InMemoryVectorStore } from '@rag/vectorstore';
+import { PostgresVectorStore } from '@rag/vectorstore';
 
 // Validate required environment variables
-validateEnvironment(['DISCORD_TOKEN']);
+validateEnvironment(['DISCORD_TOKEN', 'DATABASE_URL']);
+
+// Initialize database connection
+const databaseUrl = process.env.DATABASE_URL!;
+createDatabaseConnection(databaseUrl);
 
 const client = new Client({
   intents: [
@@ -19,7 +24,7 @@ const client = new Client({
 
 // Initialize RAG system
 const embeddings = new OpenAIEmbeddings(process.env.OPENAI_API_KEY || '');
-const vectorStore = new InMemoryVectorStore();
+const vectorStore = new PostgresVectorStore();
 const ragRetriever = new RagRetriever(embeddings, vectorStore);
 
 // Start internal API server for health checks

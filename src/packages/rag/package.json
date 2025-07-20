@@ -15,7 +15,7 @@
   },
   "dependencies": {
     "mastra": "^0.1.0",
-    "drizzle-orm": "^0.29.0"
+    "drizzle-orm": "^0.32.2"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",
