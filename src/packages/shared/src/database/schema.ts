@@ -59,6 +59,30 @@ export const ragQueries = pgTable('rag_queries', {
   createdAtIdx: index('created_at_idx').on(table.createdAt),
 }));
 
+// DB initialization jobs table
+export const initJobs = pgTable('init_jobs', {
+  id: serial('id').primaryKey(),
+  guildId: varchar('guild_id', { length: 20 }).notNull(),
+  categoryId: varchar('category_id', { length: 20 }).notNull(),
+  categoryName: varchar('category_name', { length: 100 }).notNull(),
+  initiatedBy: varchar('initiated_by', { length: 20 }).notNull(),
+  status: varchar('status', { length: 20 }).notNull().default('pending'), // pending, running, completed, failed
+  totalChannels: integer('total_channels').default(0),
+  processedChannels: integer('processed_channels').default(0),
+  totalMessages: integer('total_messages').default(0),
+  processedMessages: integer('processed_messages').default(0),
+  linksFound: integer('links_found').default(0),
+  documentsCreated: integer('documents_created').default(0),
+  errorMessage: text('error_message'),
+  startedAt: timestamp('started_at'),
+  completedAt: timestamp('completed_at'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+}, (table) => ({
+  guildIdIdx: index('init_jobs_guild_id_idx').on(table.guildId),
+  statusIdx: index('init_jobs_status_idx').on(table.status),
+  createdAtIdx: index('init_jobs_created_at_idx').on(table.createdAt),
+}));
+
 export type DbDocument = InferSelectModel<typeof documents>;
 export type NewDbDocument = InferInsertModel<typeof documents>;
 export type DbEmbedding = InferInsertModel<typeof embeddings>;
@@ -67,3 +91,5 @@ export type DbDiscordMessage = InferSelectModel<typeof discordMessages>;
 export type NewDbDiscordMessage = InferInsertModel<typeof discordMessages>;
 export type DbRagQuery = InferSelectModel<typeof ragQueries>;
 export type NewDbRagQuery = InferInsertModel<typeof ragQueries>;
+export type DbInitJob = InferSelectModel<typeof initJobs>;
+export type NewDbInitJob = InferInsertModel<typeof initJobs>;
