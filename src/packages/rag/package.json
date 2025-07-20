@@ -14,12 +14,12 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "mastra": "^0.1.0",
+    "mastra": "^0.10.13",
     "drizzle-orm": "^0.32.2"
   },
   "devDependencies": {
-    "@types/node": "^20.0.0",
-    "typescript": "^5.0.0",
-    "drizzle-kit": "^0.20.0"
+    "@types/node": "^24.0.15",
+    "typescript": "^5.8.3",
+    "drizzle-kit": "^0.31.4"
   }
 }
