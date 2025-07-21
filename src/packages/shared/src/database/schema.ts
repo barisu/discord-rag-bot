@@ -54,9 +54,9 @@ export const ragQueries = pgTable('rag_queries', {
   sourcesUsed: jsonb('sources_used').default([]),
   createdAt: timestamp('created_at').defaultNow().notNull(),
 }, (table) => ({
-  userIdIdx: index('user_id_idx').on(table.userId),
-  guildIdIdx: index('guild_id_idx').on(table.guildId),
-  createdAtIdx: index('created_at_idx').on(table.createdAt),
+  ragUserIdIdx: index('rag_user_id_idx').on(table.userId),
+  ragGuildIdIdx: index('rag_guild_id_idx').on(table.guildId),
+  ragCreatedAtIdx: index('rag_created_at_idx').on(table.createdAt),
 }));
 
 // DB initialization jobs table
