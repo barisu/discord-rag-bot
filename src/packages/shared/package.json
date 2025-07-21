@@ -8,18 +8,23 @@
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch",
-    "test": "echo \"No tests yet\"",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:ui": "vitest --ui",
     "lint": "eslint src --ext .ts",
     "type-check": "tsc --noEmit",
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "drizzle-orm": "^0.32.2",
-    "postgres": "^3.4.0"
+    "drizzle-orm": "^0.44.3",
+    "postgres": "^3.4.7"
   },
   "devDependencies": {
     "@types/node": "^24.0.15",
     "typescript": "^5.8.3",
-    "drizzle-kit": "^0.31.4"
+    "drizzle-kit": "^0.31.4",
+    "vitest": "^3.2.4",
+    "@testcontainers/postgresql": "^11.3.1",
+    "@vitest/ui": "^3.2.4"
   }
 }

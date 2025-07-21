@@ -12,11 +12,13 @@
     "dev": "npm run dev --workspaces",
     "dev:discord-bot": "npm run dev --workspace=src/apps/discord-bot",
     "test": "npm run test --workspaces",
+    "test:ui": "vitest --ui",
+    "test:coverage": "vitest run --coverage",
     "lint": "npm run lint --workspaces",
     "type-check": "npm run type-check --workspaces",
     "clean": "npm run clean --workspaces",
-    "db:generate": "drizzle-kit generate:pg",
-    "db:migrate": "drizzle-kit push:pg",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
     "docker:up": "docker compose up -d",
     "docker:down": "docker compose down",
@@ -29,7 +31,10 @@
     "eslint": "^9.31.0",
     "@typescript-eslint/eslint-plugin": "^8.37.0",
     "@typescript-eslint/parser": "^8.37.0",
-    "drizzle-kit": "^0.31.4"
+    "drizzle-kit": "^0.31.4",
+    "vitest": "^3.2.4",
+    "@testcontainers/postgresql": "^11.3.1",
+    "@vitest/ui": "^3.2.4"
   },
   "engines": {
     "node": ">=18.0.0",

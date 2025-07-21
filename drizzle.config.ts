@@ -1,12 +1,12 @@
-import type { Config } from 'drizzle-kit';
+import { defineConfig } from 'drizzle-kit';
 
-export default {
+export default defineConfig({
   schema: './src/packages/shared/src/database/schema.ts',
   out: './drizzle',
-  driver: 'pg',
+  dialect: 'postgresql',
   dbCredentials: {
-    connectionString: process.env.DATABASE_URL || 'postgres://postgres:postgres@localhost:5432/discord_rag_bot',
+    url: process.env.DATABASE_URL || 'postgres://postgres:postgres@localhost:5432/discord_rag_bot',
   },
   verbose: true,
   strict: true,
-} satisfies Config;
+});
