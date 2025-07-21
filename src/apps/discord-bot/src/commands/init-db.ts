@@ -1,9 +1,9 @@
 import { Message, PermissionFlagsBits, ChannelType } from 'discord.js';
 import { MessageFetcher, MessageData } from '@shared/discord/message-fetcher';
 import { LinkProcessor, ProcessedContent } from '@shared/content/link-processor';
-import { getDatabase } from '@shared/database';
+import { getDatabaseConnection } from '@shared/database';
 import { initJobs, documents, discordMessages, NewDbInitJob } from '@shared/database/schema';
-import { eq } from 'drizzle-orm';
+import { eq, and } from 'drizzle-orm';
 
 export class InitDbCommand {
   private messageFetcher: MessageFetcher;
@@ -49,12 +49,11 @@ export class InitDbCommand {
       }
 
       // 既存の処理中ジョブをチェック
-      const db = getDatabase();
+      const db = getDatabaseConnection();
       const existingJob = await db
         .select()
         .from(initJobs)
-        .where(eq(initJobs.guildId, message.guildId))
-        .where(eq(initJobs.status, 'running'))
+        .where(and(eq(initJobs.guildId, message.guildId), eq(initJobs.status, 'running')))
         .limit(1);
 
       if (existingJob.length > 0) {
@@ -97,7 +96,7 @@ export class InitDbCommand {
     originalMessage: Message,
     statusMessage: Message
   ): Promise<void> {
-    const db = getDatabase();
+    const db = getDatabaseConnection();
     
     try {
       // ジョブステータスを実行中に更新
@@ -109,7 +108,6 @@ export class InitDbCommand {
         })
         .where(eq(initJobs.id, jobId));
 
-      let totalProcessed = 0;
       let totalLinks = 0;
       let totalDocuments = 0;
 
