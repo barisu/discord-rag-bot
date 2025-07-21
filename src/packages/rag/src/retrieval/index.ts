@@ -1,4 +1,4 @@
-import type { RagQuery, RagResponse, Source } from '@shared/types';
+import type { RagQuery, RagResponse, Source } from '@shared/core';
 import type { EmbeddingProvider } from '../embeddings';
 import type { VectorStore } from '../vectorstore';
 

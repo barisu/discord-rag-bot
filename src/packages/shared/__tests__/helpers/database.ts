@@ -1,10 +1,11 @@
 import { PostgreSqlContainer,StartedPostgreSqlContainer } from '@testcontainers/postgresql';
-import { drizzle,PostgresJsDatabase } from 'drizzle-orm/postgres-js';
+import { drizzle } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
+import { schema } from '../../src/database';
 import { migrate } from 'drizzle-orm/postgres-js/migrator';
 
 let testContainer: StartedPostgreSqlContainer | null = null;
-let testDb: PostgresJsDatabase | null = null;
+let testDb: ReturnType<typeof drizzle> | null = null;
 let testClient: postgres.Sql | null = null;
 
 export async function getTestDatabase() {
@@ -24,7 +25,7 @@ export async function getTestDatabase() {
     max: 1, // テスト用なので接続数を制限
   });
 
-  testDb = drizzle(testClient);
+  testDb = drizzle(testClient, { schema });
 
   // pgvector拡張を有効化
   await testClient`CREATE EXTENSION IF NOT EXISTS vector`;

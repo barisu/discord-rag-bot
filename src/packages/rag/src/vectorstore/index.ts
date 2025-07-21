@@ -1,4 +1,4 @@
-import type { Source } from '@shared/types';
+import type { Source } from '@shared/core';
 
 export interface VectorStore {
   addDocument(content: string, metadata: Record<string, any>, embedding?: number[]): Promise<string>;

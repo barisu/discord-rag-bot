@@ -1,6 +1,6 @@
 import { eq, sql, desc } from 'drizzle-orm';
 import type { VectorStore } from './index';
-import type { Source } from '@shared/types';
+import type { Source } from '@shared/core';
 import { getDatabaseConnection, documents, embeddings } from '@shared/database';
 
 export class PostgresVectorStore implements VectorStore {

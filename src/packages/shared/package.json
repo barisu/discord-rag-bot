@@ -1,5 +1,5 @@
 {
-  "name": "@shared/types",
+  "name": "@shared/core",
   "version": "1.0.0",
   "description": "Shared types and utilities for Discord RAG Bot",
   "type": "module",
