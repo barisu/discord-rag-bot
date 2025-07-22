@@ -66,12 +66,12 @@ export class PostgresVectorStore implements VectorStore {
     const results = await this.db
       .select({
         id: documents.id,
-        similarity: sql<number>`1 - (${embeddings.embedding} <=> ${queryEmbedding}::vector)`,
+        similarity: sql<number>`1 - (${cosineDistance(embeddings.embedding, queryEmbedding)})`,
       })
       .from(documents)
       .innerJoin(embeddings, eq(documents.id, embeddings.documentId))
-      .where(sql`1 - (${embeddings.embedding} <=> ${queryEmbedding}::vector) > ${threshold}`)
-      .orderBy(desc(sql`1 - (${embeddings.embedding} <=> ${queryEmbedding}::vector)`))
+      .where(sql`1 - (${cosineDistance(embeddings.embedding, queryEmbedding)}) > ${threshold}`)
+      .orderBy(desc(sql`1 - (${cosineDistance(embeddings.embedding, queryEmbedding)})`))
       .limit(limit);
 
     return results.map(row => ({
