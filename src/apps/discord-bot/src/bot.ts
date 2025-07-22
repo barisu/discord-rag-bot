@@ -6,6 +6,7 @@ import { RagRetriever } from '@rag/retrieval';
 import { OpenAIEmbeddings } from '@rag/embeddings';
 import { PostgresVectorStore } from '@rag/vectorstore';
 import { InitDbCommand } from './commands/init-db';
+import { SearchCommand } from './commands/search';
 
 // Validate required environment variables
 validateEnvironment(['DISCORD_TOKEN', 'DATABASE_URL']);
@@ -30,6 +31,7 @@ const ragRetriever = new RagRetriever(embeddings, vectorStore);
 
 // Initialize commands
 const initDbCommand = new InitDbCommand(client);
+const searchCommand = new SearchCommand(client);
 
 // Start internal API server for health checks
 const apiPort = parseInt(process.env.API_PORT || '3001');
@@ -50,6 +52,12 @@ client.on(Events.MessageCreate, async (message) => {
   if (message.content.startsWith('!init-db')) {
     const args = message.content.slice(8).trim().split(/\s+/);
     await initDbCommand.execute(message, args);
+    return;
+  }
+  
+  if (message.content.startsWith('!search')) {
+    const args = message.content.slice(8).trim().split(/\s+/);
+    await searchCommand.execute(message, args);
     return;
   }
   

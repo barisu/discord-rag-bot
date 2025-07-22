@@ -19,6 +19,7 @@
     "test:integration:cleanup": "npm run test:integration:cleanup --workspace=src/apps/discord-bot",
     "dev:integration": "npm run dev:integration --workspace=src/apps/discord-bot",
     "dev:integration:setup": "npm run dev:integration:setup --workspace=src/apps/discord-bot",
+    "dev:integration:studio": "npm run dev:integration:studio --workspace=src/apps/discord-bot",
     "lint": "npm run lint --workspaces",
     "type-check": "npm run type-check --workspaces",
     "clean": "npm run clean --workspaces",

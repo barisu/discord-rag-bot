@@ -8,6 +8,7 @@
     "dev": "tsx watch src/index.ts",
     "dev:integration": "node scripts/start-integration-bot.js",
     "dev:integration:setup": "echo '🗃️ 結合テスト用DBセットアップ...' && npm run test:integration:setup && echo '✅ DBセットアップ完了。npm run dev:integration でBot起動してください'",
+    "dev:integration:studio": "node scripts/start-integration-studio.js",
     "build": "tsc",
     "start": "node dist/index.js",
     "test": "vitest run",

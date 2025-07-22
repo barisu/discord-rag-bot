@@ -74,6 +74,27 @@ export class TestData {
         },
       ],
       
+      searchCases: [
+        {
+          name: '基本的な検索テスト',
+          command: '!search test',
+          shouldSucceed: true,
+          expectedResponse: /🔍 検索結果|検索可能なドキュメントがありません/,
+        },
+        {
+          name: 'TypeScript関連の検索',
+          command: '!search TypeScript',
+          shouldSucceed: true,
+          expectedResponse: /🔍 検索結果|検索可能なドキュメントがありません/,
+        },
+        {
+          name: '日本語での検索',
+          command: '!search エラー ハンドリング',
+          shouldSucceed: true,
+          expectedResponse: /🔍 検索結果|検索可能なドキュメントがありません/,
+        },
+      ],
+      
       errorCases: [
         {
           name: '一般ユーザーによる実行（権限エラー）',
@@ -95,6 +116,27 @@ export class TestData {
           userId: this.config.TEST_ADMIN_USER_ID,
           shouldSucceed: false,
           expectedResponse: /❌.*カテゴリが見つからないか、アクセスできません/,
+        },
+      ],
+      
+      searchErrorCases: [
+        {
+          name: '引数なしでの検索実行',
+          command: '!search',
+          shouldSucceed: false,
+          expectedResponse: /🔍 検索コマンドの使用方法/,
+        },
+        {
+          name: '短すぎるクエリでの検索',
+          command: '!search a',
+          shouldSucceed: false,
+          expectedResponse: /❌.*2文字以上で入力してください/,
+        },
+        {
+          name: '長すぎるクエリでの検索',
+          command: `!search ${'a'.repeat(201)}`,
+          shouldSucceed: false,
+          expectedResponse: /❌.*200文字以内で入力してください/,
         },
       ],
     };
