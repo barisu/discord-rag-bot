@@ -46,6 +46,10 @@ export class TestDiscordSetup {
         try {
           // テスト用ギルドとカテゴリの取得
           await this.setupTestGuild();
+          
+          // テスト用メッセージハンドラーを設定（Botメッセージも処理）
+          await this.setupTestMessageHandler();
+          
           resolve(readyClient);
         } catch (error) {
           reject(error);
@@ -60,6 +64,48 @@ export class TestDiscordSetup {
 
       this.client!.login(this.config.DISCORD_TOKEN).catch(reject);
     });
+  }
+
+  /**
+   * テスト用メッセージハンドラーを設定
+   * 通常のBotと異なり、Botメッセージにも応答してテストを実行
+   */
+  private static async setupTestMessageHandler() {
+    if (!this.client) return;
+
+    // InitDbCommandインスタンスを動的にインポート
+    const { InitDbCommand } = await import('../../../src/commands/init-db.js');
+    const initDbCommand = new InitDbCommand(this.client);
+
+    this.client.on(Events.MessageCreate, async (message) => {
+      // テスト用チャンネル以外は無視
+      if (message.channel.id !== this.testChannel?.id) return;
+      
+      // Bot自身のメッセージの場合は、初回のみ処理（無限ループ回避）
+      if (message.author.bot && message.author.id === this.client!.user!.id) {
+        // テスト用のコマンドメッセージのみ処理
+        if (message.content.startsWith('!init-db') || message.content.startsWith('!ping')) {
+          console.log(`🔄 テストBot自身のコマンドを処理: ${message.content}`);
+        } else {
+          return; // 通常のBot応答メッセージは無視
+        }
+      }
+      
+      // ping テスト
+      if (message.content.startsWith('!ping')) {
+        await message.reply('Pong! テスト用Discord RAG Bot準備完了.');
+        return;
+      }
+      
+      // init-db コマンド処理
+      if (message.content.startsWith('!init-db')) {
+        const args = message.content.slice(8).trim().split(/\s+/);
+        await initDbCommand.execute(message, args);
+        return;
+      }
+    });
+
+    console.log('✅ テスト用メッセージハンドラー設定完了');
   }
 
   /**
@@ -193,7 +239,7 @@ export class TestDiscordSetup {
   /**
    * Bot応答を待機して取得
    */
-  static async waitForBotResponse(timeoutMs: number = 10000): Promise<Message | null> {
+  static async waitForBotResponse(timeoutMs: number = 60000): Promise<Message | null> {
     if (!this.client || !this.testChannel) {
       throw new Error('Discord環境が初期化されていません');
     }

@@ -42,24 +42,24 @@
 
 ### 2. テスト用データベース環境
 
-#### Docker でPostgreSQL起動
+#### Docker でPostgreSQL起動とマイグレーション
 ```bash
-# テスト用PostgreSQL + pgvectorコンテナを起動
+# Discord Botワークスペースで実行
+cd src/apps/discord-bot
+
+# テスト用PostgreSQL + pgvectorコンテナ起動とマイグレーション適用
 npm run test:integration:setup
 
-# または手動で起動
+# または手動で起動・マイグレーション
 docker run -d --name test-postgres \
   -e POSTGRES_DB=discord_rag_bot_test \
   -e POSTGRES_USER=test \
   -e POSTGRES_PASSWORD=test \
   -p 5433:5432 \
   pgvector/pgvector:pg16
-```
 
-#### マイグレーション適用
-```bash
-# メインディレクトリで実行
-DATABASE_URL=postgres://test:test@localhost:5433/discord_rag_bot_test npm run db:migrate
+# 手動でマイグレーション適用
+npm run test:integration:migrate
 ```
 
 ### 3. 環境変数設定

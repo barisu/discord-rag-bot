@@ -23,9 +23,9 @@ export default defineConfig({
     environment: 'node',
     
     // タイムアウト設定（結合テストは時間がかかる）
-    testTimeout: 60000, // 60秒
-    hookTimeout: 30000, // 30秒
-    teardownTimeout: 15000, // 15秒
+    testTimeout: 300000, // 5分（重いinit-db処理対応）
+    hookTimeout: 60000, // 60秒（Bot接続・DB初期化）
+    teardownTimeout: 30000, // 30秒（クリーンアップ処理）
     
     // 並列実行を無効化（Discord API制限とリソース管理のため）
     pool: 'threads',

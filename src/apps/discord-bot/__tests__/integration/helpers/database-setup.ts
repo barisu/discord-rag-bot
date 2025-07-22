@@ -35,13 +35,28 @@ export class IntegrationDatabaseSetup {
       await this.client`SELECT 1`;
       console.log('✅ データベース接続成功');
 
-      // pgvector拡張を有効化
-      await this.client`CREATE EXTENSION IF NOT EXISTS vector`;
-      console.log('✅ pgvector拡張有効化完了');
+      // pgvector拡張確認（pgvectorコンテナでは既に有効）
+      const extensions = await this.client`
+        SELECT extname FROM pg_extension WHERE extname = 'vector'
+      `;
+      if (extensions.length > 0) {
+        console.log('✅ pgvector拡張確認完了');
+      } else {
+        // フォールバック: 拡張が無い場合は有効化
+        await this.client`CREATE EXTENSION IF NOT EXISTS vector`;
+        console.log('✅ pgvector拡張有効化完了');
+      }
 
-      // マイグレーション適用
-      await migrate(this.db, { migrationsFolder: '../../../drizzle' });
-      console.log('✅ マイグレーション適用完了');
+      // テーブル存在確認
+      try {
+        await this.client`SELECT 1 FROM discord_messages LIMIT 1`;
+        console.log('✅ テーブルが既に存在します（マイグレーション不要）');
+      } catch (error) {
+        // テーブルが存在しない場合のみマイグレーション実行
+        console.log('📄 マイグレーション適用中...');
+        await migrate(this.db, { migrationsFolder: '../../../drizzle' });
+        console.log('✅ マイグレーション適用完了');
+      }
 
       return this.db;
 

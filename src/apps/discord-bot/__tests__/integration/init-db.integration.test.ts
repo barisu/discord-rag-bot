@@ -12,7 +12,6 @@ import { InitDbCommand } from '../../src/commands/init-db.js';
  */
 describe('InitDB Command Integration Tests', () => {
   let client: Client;
-  let testDb: any;
   let initDbCommand: InitDbCommand;
   
   const integratioConfig = getIntegrationConfig();
@@ -26,10 +25,10 @@ describe('InitDB Command Integration Tests', () => {
 
     try {
       // データベース接続
-      testDb = await IntegrationDatabaseSetup.createTestDatabase();
+      await IntegrationDatabaseSetup.createTestDatabase();
       await IntegrationDatabaseSetup.verifyTables();
 
-      // Discord Bot接続
+      // Discord Bot接続（テスト専用）
       client = await TestDiscordSetup.createTestClient();
       
       // InitDbCommandインスタンス作成
@@ -74,7 +73,7 @@ describe('InitDB Command Integration Tests', () => {
       const testCase = testData.validCases.find(c => c.name.includes('管理者による正常'))!;
       
       // コマンド送信をシミュレート
-      const commandMessage = await TestDiscordSetup.sendAdminMessage(testCase.command);
+      await TestDiscordSetup.sendAdminMessage(testCase.command);
       
       // Bot応答を待機
       const botResponse = await TestDiscordSetup.waitForBotResponse(timeouts.commandResponse);
@@ -92,7 +91,7 @@ describe('InitDB Command Integration Tests', () => {
       const testCase = testData.errorCases.find(c => c.name.includes('一般ユーザー'))!;
       
       // 一般ユーザーとしてコマンド送信
-      const commandMessage = await TestDiscordSetup.sendRegularUserMessage(testCase.command);
+      await TestDiscordSetup.sendRegularUserMessage(testCase.command);
       
       // Bot応答を待機
       const botResponse = await TestDiscordSetup.waitForBotResponse(timeouts.commandResponse);
@@ -109,7 +108,7 @@ describe('InitDB Command Integration Tests', () => {
     it('引数不足でのエラーメッセージ表示', async () => {
       const testCase = testData.errorCases.find(c => c.name.includes('引数なし'))!;
       
-      const commandMessage = await TestDiscordSetup.sendAdminMessage(testCase.command);
+      await TestDiscordSetup.sendAdminMessage(testCase.command);
       const botResponse = await TestDiscordSetup.waitForBotResponse(timeouts.commandResponse);
       
       expect(botResponse).toBeTruthy();
@@ -122,7 +121,7 @@ describe('InitDB Command Integration Tests', () => {
     it('有効なカテゴリIDでの処理開始', async () => {
       const command = `!init-db ${integratioConfig.TEST_CATEGORY_ID}`;
       
-      const commandMessage = await TestDiscordSetup.sendAdminMessage(command);
+      await TestDiscordSetup.sendAdminMessage(command);
       const botResponse = await TestDiscordSetup.waitForBotResponse(timeouts.commandResponse);
       
       expect(botResponse).toBeTruthy();
@@ -136,7 +135,7 @@ describe('InitDB Command Integration Tests', () => {
     it('Discord ID記号付きカテゴリIDの正しい処理', async () => {
       const command = `!init-db <#${integratioConfig.TEST_CATEGORY_ID}>`;
       
-      const commandMessage = await TestDiscordSetup.sendAdminMessage(command);
+      await TestDiscordSetup.sendAdminMessage(command);
       const botResponse = await TestDiscordSetup.waitForBotResponse(timeouts.commandResponse);
       
       expect(botResponse).toBeTruthy();
@@ -147,7 +146,7 @@ describe('InitDB Command Integration Tests', () => {
     it('無効なカテゴリIDでのエラー処理', async () => {
       const testCase = testData.errorCases.find(c => c.name.includes('無効なカテゴリ'))!;
       
-      const commandMessage = await TestDiscordSetup.sendAdminMessage(testCase.command);
+      await TestDiscordSetup.sendAdminMessage(testCase.command);
       const botResponse = await TestDiscordSetup.waitForBotResponse(timeouts.commandResponse);
       
       expect(botResponse).toBeTruthy();
@@ -161,7 +160,7 @@ describe('InitDB Command Integration Tests', () => {
       const command = `!init-db ${integratioConfig.TEST_CATEGORY_ID}`;
       
       // コマンド実行
-      const commandMessage = await TestDiscordSetup.sendAdminMessage(command);
+      await TestDiscordSetup.sendAdminMessage(command);
       const initialResponse = await TestDiscordSetup.waitForBotResponse(timeouts.commandResponse);
       
       expect(initialResponse).toBeTruthy();
@@ -249,7 +248,7 @@ describe('InitDB Command Integration Tests', () => {
       
       const command = `!init-db ${integratioConfig.TEST_CATEGORY_ID}`;
       
-      const commandMessage = await TestDiscordSetup.sendAdminMessage(command);
+      await TestDiscordSetup.sendAdminMessage(command);
       const response = await TestDiscordSetup.waitForBotResponse(timeouts.commandResponse);
       
       // 制約エラーがあっても処理が継続することを確認
@@ -262,7 +261,7 @@ describe('InitDB Command Integration Tests', () => {
     it('処理進捗の適切な表示', async () => {
       const command = `!init-db ${integratioConfig.TEST_CATEGORY_ID}`;
       
-      const commandMessage = await TestDiscordSetup.sendAdminMessage(command);
+      await TestDiscordSetup.sendAdminMessage(command);
       const initialResponse = await TestDiscordSetup.waitForBotResponse(timeouts.commandResponse);
       
       expect(initialResponse?.content).toMatch(successPatterns.started);

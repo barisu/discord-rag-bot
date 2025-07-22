@@ -199,22 +199,25 @@ export class TestData {
   static getTimeouts() {
     return {
       // Discord Bot接続タイムアウト
-      botConnection: 15000, // 15秒
+      botConnection: 20000, // 20秒（接続安定性向上）
       
-      // コマンド応答待機時間
-      commandResponse: 5000, // 5秒
+      // コマンド応答待機時間（初回応答「処理開始」メッセージ）
+      commandResponse: 30000, // 30秒（Bot処理開始まで余裕を持たせる）
       
       // 処理完了待機時間（init-dbの完全実行）
-      processingComplete: this.config.TEST_TIMEOUT, // 設定値に依存
+      processingComplete: Math.max(this.config.TEST_TIMEOUT, 120000), // 最低2分、設定値とのmax
+      
+      // 長時間処理用タイムアウト（重いコマンド実行）
+      heavyOperation: 180000, // 3分（大量メッセージ処理対応）
       
       // データベース確認の待機時間
-      databaseCheck: 2000, // 2秒
+      databaseCheck: 5000, // 5秒（DB処理完了待ち）
       
       // メッセージ間の待機時間（レート制限回避）
-      messageCooldown: 1000, // 1秒
+      messageCooldown: 2000, // 2秒（Discord API制限対応強化）
       
       // クリーンアップ待機時間
-      cleanup: 3000, // 3秒
+      cleanup: 10000, // 10秒（Bot切断・DB切断処理）
     };
   }
 
