@@ -72,7 +72,7 @@ export class SearchCommand {
       // 詳細なソース情報が必要な場合は追加で送信
       if (ragResponse.sources.length > 0) {
         const sourceEmbed = await this.createSourcesEmbed(ragResponse.sources);
-        await message.followUp({ embeds: [sourceEmbed] });
+        await message.reply({ embeds: [sourceEmbed] });
       }
 
       // 検索履歴をログに記録
