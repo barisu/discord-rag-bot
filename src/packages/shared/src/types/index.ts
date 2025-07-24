@@ -40,3 +40,13 @@ export interface ApiConfig {
   rateLimitWindow: number;
   rateLimitMax: number;
 }
+
+export interface TextChunk {
+  content: string;
+  index: number;
+}
+
+export interface ChunkingOptions {
+  maxChunkSize?: number;
+  language?: string;
+}
