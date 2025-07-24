@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
-import { LinkProcessor, type ProcessedContent, type LinkContent } from '../../src/content/link-processor';
+import { LinkProcessor } from '../../src/content/link-processor';
 
 // fetchのモック
 const mockFetch = vi.fn();
@@ -52,10 +52,12 @@ describe('LinkProcessor', () => {
           description: 'This is a test article description',
           domain: 'example.com',
           statusCode: 200,
+          extractionMethod: 'readability',
         },
       });
       expect(result[0].content).toContain('This is a sample article');
       expect(result[0].metadata.processedAt).toBeInstanceOf(Date);
+      expect(result[0].metadata.contentLength).toBeGreaterThan(0);
     });
 
     it('ブロックされたドメインはスキップする', async () => {
@@ -209,6 +211,161 @@ describe('LinkProcessor', () => {
       expect(result).toHaveLength(2);
       expect(result[0].title).toBe('Article 1');
       expect(result[1].title).toBe('Article 2');
+    });
+  });
+
+  describe('Mozilla Readability統合', () => {
+    it('記事構造を正しく認識してコンテンツを抽出する', async () => {
+      const mockArticleHtml = `
+        <html>
+          <head>
+            <title>AI技術の最新動向</title>
+            <meta name="description" content="人工知能技術の最新トレンドについて詳しく解説">
+            <meta name="author" content="技術太郎">
+          </head>
+          <body>
+            <header>
+              <nav>ナビゲーション</nav>
+            </header>
+            <main>
+              <article>
+                <h1>AI技術の最新動向</h1>
+                <div class="byline">著者: 技術太郎 | 投稿日: 2024年1月15日</div>
+                <div class="content">
+                  <p>人工知能（AI）技術は急速に発展しており、私たちの日常生活やビジネスに大きな変革をもたらしています。</p>
+                  <p>特に大規模言語モデル（LLM）の登場により、自然言語処理の分野で画期的な進歩が見られます。これらの技術は、文章生成、翻訳、要約、質問応答など様々なタスクで人間レベルの性能を示しています。</p>
+                  <p>また、機械学習の分野では、深層学習アルゴリズムの改良により、画像認識、音声認識、予測分析などの精度が大幅に向上しています。</p>
+                  <p>今後は、AI技術の倫理的な使用、プライバシー保護、説明可能性などの課題への対応が重要になると考えられています。</p>
+                </div>
+              </article>
+            </main>
+            <aside>
+              <div class="ads">広告コンテンツ</div>
+              <div class="related">関連記事</div>
+            </aside>
+            <footer>フッター情報</footer>
+          </body>
+        </html>
+      `;
+
+      mockFetch.mockResolvedValue({
+        ok: true,
+        status: 200,
+        headers: {
+          get: vi.fn().mockReturnValue('text/html; charset=utf-8'),
+        },
+        text: vi.fn().mockResolvedValue(mockArticleHtml),
+      });
+
+      const links = ['https://tech-blog.example.com/ai-trends'];
+      const result = await linkProcessor.processLinks(links);
+
+      expect(result).toHaveLength(1);
+      
+      const processedContent = result[0];
+      expect(processedContent.title).toBe('AI技術の最新動向');
+      expect(processedContent.metadata.description).toBe('人工知能技術の最新トレンドについて詳しく解説');
+      expect(processedContent.metadata.extractionMethod).toBe('readability');
+      
+      // Readabilityによりナビゲーション、広告、フッターが除去されていることを確認
+      expect(processedContent.content).toContain('人工知能（AI）技術は急速に発展');
+      expect(processedContent.content).toContain('大規模言語モデル');
+      expect(processedContent.content).not.toContain('ナビゲーション');
+      expect(processedContent.content).not.toContain('広告コンテンツ');
+      expect(processedContent.content).not.toContain('フッター情報');
+      
+      // メタデータが正しく設定されていることを確認
+      expect(processedContent.metadata.contentLength).toBeGreaterThan(200);
+      expect(processedContent.metadata.byline).toContain('技術太郎'); // Readabilityが抽出した著者情報
+    });
+
+    it('Readability失敗時にフォールバック処理が動作する', async () => {
+      // Readabilityが失敗するような構造の悪いHTML
+      const mockBadHtml = `
+        <html>
+          <head>
+            <title>構造の悪いページ</title>
+          </head>
+          <body>
+            <div>
+              <span>これは構造が悪く、Readabilityが失敗する可能性があるHTMLです。ただし、フォールバック処理により、基本的なコンテンツ抽出は動作するはずです。テキストは十分な長さが必要です。</span>
+            </div>
+          </body>
+        </html>
+      `;
+
+      mockFetch.mockResolvedValue({
+        ok: true,
+        status: 200,
+        headers: {
+          get: vi.fn().mockReturnValue('text/html'),
+        },
+        text: vi.fn().mockResolvedValue(mockBadHtml),
+      });
+
+      const links = ['https://bad-structure.example.com'];
+      const result = await linkProcessor.processLinks(links);
+
+      expect(result).toHaveLength(1);
+      
+      const processedContent = result[0];
+      expect(processedContent.title).toBe('構造の悪いページ');
+      expect(processedContent.content).toContain('これは構造が悪く');
+      // フォールバック処理が使用された場合はextractionMethodが'fallback'になる
+      expect(['readability', 'fallback']).toContain(processedContent.metadata.extractionMethod);
+    });
+
+    it('ニュース記事の構造を正しく処理する', async () => {
+      const mockNewsHtml = `
+        <html>
+          <head>
+            <title>最新技術ニュース：新しいAIモデルが発表</title>
+            <meta name="description" content="最新のAI技術に関するニュース記事">
+          </head>
+          <body>
+            <article class="news-article">
+              <header>
+                <h1>新しいAIモデルが発表</h1>
+                <time datetime="2024-01-15">2024年1月15日</time>
+                <div class="author">記者: ニュース花子</div>
+              </header>
+              <div class="article-content">
+                <p class="lead">本日、画期的な新しい人工知能モデルが研究チームによって発表されました。</p>
+                <p>この新モデルは従来の技術を大幅に上回る性能を示しており、自然言語理解と生成において人間レベルの能力を実現しています。</p>
+                <p>研究チームのリーダーは「この技術により、AI分野に新たな可能性が開けるでしょう」とコメントしています。</p>
+                <p>今回の発表は、AI技術の発展において重要なマイルストーンとなることが期待されています。業界関係者からも高い評価を得ており、実用化に向けた検討が始まっています。</p>
+              </div>
+            </article>
+            <div class="sidebar">
+              <div class="related-news">関連ニュース</div>
+            </div>
+          </body>
+        </html>
+      `;
+
+      mockFetch.mockResolvedValue({
+        ok: true,
+        status: 200,
+        headers: {
+          get: vi.fn().mockReturnValue('text/html'),
+        },
+        text: vi.fn().mockResolvedValue(mockNewsHtml),
+      });
+
+      const links = ['https://news.example.com/ai-model-announcement'];
+      const result = await linkProcessor.processLinks(links);
+
+      expect(result).toHaveLength(1);
+      
+      const processedContent = result[0];
+      expect(processedContent.title).toContain('新しいAIモデル');
+      expect(processedContent.content).toContain('画期的な新しい人工知能モデル');
+      expect(processedContent.content).toContain('従来の技術を大幅に上回る');
+      expect(processedContent.content).not.toContain('関連ニュース'); // サイドバーは除去される
+      
+      // ニュース記事特有のメタデータ
+      expect(processedContent.metadata.extractionMethod).toBe('readability');
+      expect(processedContent.metadata.byline).toContain('ニュース花子');
     });
   });
 
