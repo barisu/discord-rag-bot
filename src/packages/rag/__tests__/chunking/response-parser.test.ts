@@ -2,104 +2,104 @@ import { describe, it, expect } from 'vitest';
 import { parseChunkingResponse } from '../../src/chunking/response-parser';
 
 describe('parseChunkingResponse', () => {
-  it('should parse valid JSON response', () => {
+  it('有効なJSONレスポンスをパースする', () => {
     const response = JSON.stringify({
       chunks: [
-        { content: 'First chunk', index: 0 },
-        { content: 'Second chunk', index: 1 },
+        { content: '第1チャンク', index: 0 },
+        { content: '第2チャンク', index: 1 },
       ],
     });
 
     const result = parseChunkingResponse(response);
 
     expect(result).toHaveLength(2);
-    expect(result[0]).toEqual({ content: 'First chunk', index: 0 });
-    expect(result[1]).toEqual({ content: 'Second chunk', index: 1 });
+    expect(result[0]).toEqual({ content: '第1チャンク', index: 0 });
+    expect(result[1]).toEqual({ content: '第2チャンク', index: 1 });
   });
 
-  it('should parse JSON wrapped in code blocks', () => {
+  it('コードブロックで囲まれたJSONをパースする', () => {
     const response = `
-Some text before
+前のテキスト
 
 \`\`\`json
 {
   "chunks": [
-    { "content": "Wrapped chunk", "index": 0 }
+    { "content": "ラップされたチャンク", "index": 0 }
   ]
 }
 \`\`\`
 
-Some text after
+後のテキスト
     `;
 
     const result = parseChunkingResponse(response);
 
     expect(result).toHaveLength(1);
-    expect(result[0]).toEqual({ content: 'Wrapped chunk', index: 0 });
+    expect(result[0]).toEqual({ content: 'ラップされたチャンク', index: 0 });
   });
 
-  it('should filter empty chunks', () => {
+  it('空のチャンクをフィルタリングする', () => {
     const response = JSON.stringify({
       chunks: [
-        { content: 'Valid chunk', index: 0 },
+        { content: '有効なチャンク', index: 0 },
         { content: '', index: 1 },
         { content: '   ', index: 2 },
-        { content: 'Another valid chunk', index: 3 },
+        { content: 'もう一つの有効なチャンク', index: 3 },
       ],
     });
 
     const result = parseChunkingResponse(response);
 
     expect(result).toHaveLength(2);
-    expect(result[0]).toEqual({ content: 'Valid chunk', index: 0 });
-    expect(result[1]).toEqual({ content: 'Another valid chunk', index: 1 });
+    expect(result[0]).toEqual({ content: '有効なチャンク', index: 0 });
+    expect(result[1]).toEqual({ content: 'もう一つの有効なチャンク', index: 1 });
   });
 
-  it('should normalize indices', () => {
+  it('インデックスを正規化する', () => {
     const response = JSON.stringify({
       chunks: [
-        { content: 'First', index: 5 },
-        { content: 'Second', index: 10 },
-        { content: 'Third', index: 15 },
+        { content: '第1', index: 5 },
+        { content: '第2', index: 10 },
+        { content: '第3', index: 15 },
       ],
     });
 
     const result = parseChunkingResponse(response);
 
     expect(result).toHaveLength(3);
-    expect(result[0]).toEqual({ content: 'First', index: 0 });
-    expect(result[1]).toEqual({ content: 'Second', index: 1 });
-    expect(result[2]).toEqual({ content: 'Third', index: 2 });
+    expect(result[0]).toEqual({ content: '第1', index: 0 });
+    expect(result[1]).toEqual({ content: '第2', index: 1 });
+    expect(result[2]).toEqual({ content: '第3', index: 2 });
   });
 
-  it('should throw error for invalid JSON', () => {
-    const response = 'This is not valid JSON';
+  it('無効なJSONに対してエラーをスローする', () => {
+    const response = 'これは有効なJSONではありません';
 
     expect(() => parseChunkingResponse(response)).toThrow('Failed to parse chunking response');
   });
 
-  it('should throw error for missing chunks array', () => {
+  it('chunks配列がない場合にエラーをスローする', () => {
     const response = JSON.stringify({
-      data: [{ content: 'Wrong format', index: 0 }],
+      data: [{ content: '間違ったフォーマット', index: 0 }],
     });
 
     expect(() => parseChunkingResponse(response)).toThrow('Invalid response format: chunks array not found');
   });
 
-  it('should handle JSON object without code blocks', () => {
+  it('コードブロックなしのJSONオブジェクトを処理する', () => {
     const response = `
-Some text before
+前のテキスト
 {
   "chunks": [
-    { "content": "Direct JSON", "index": 0 }
+    { "content": "直接JSON", "index": 0 }
   ]
 }
-Some text after
+後のテキスト
     `;
 
     const result = parseChunkingResponse(response);
 
     expect(result).toHaveLength(1);
-    expect(result[0]).toEqual({ content: 'Direct JSON', index: 0 });
+    expect(result[0]).toEqual({ content: '直接JSON', index: 0 });
   });
 });

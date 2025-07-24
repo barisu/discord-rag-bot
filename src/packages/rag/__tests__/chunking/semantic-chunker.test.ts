@@ -14,22 +14,22 @@ describe('SemanticChunker', () => {
   });
 
   describe('chunk', () => {
-    it('should chunk text using LLM', async () => {
+    it('LLMを使用してテキストをチャンク化する', async () => {
       const mockResponseText = JSON.stringify({
         chunks: [
-          { content: 'First chunk content', index: 0 },
-          { content: 'Second chunk content', index: 1 },
+          { content: '第1チャンクの内容', index: 0 },
+          { content: '第2チャンクの内容', index: 1 },
         ],
       });
 
       vi.mocked(mockLLMClient.generateText).mockResolvedValue(mockResponseText);
 
-      const text = 'This is a long text that should be chunked into multiple parts.';
+      const text = 'これは複数の部分にチャンク化されるべき長いテキストです。';
       const result = await chunker.chunk(text);
 
       expect(result).toHaveLength(2);
-      expect(result[0]).toEqual({ content: 'First chunk content', index: 0 });
-      expect(result[1]).toEqual({ content: 'Second chunk content', index: 1 });
+      expect(result[0]).toEqual({ content: '第1チャンクの内容', index: 0 });
+      expect(result[1]).toEqual({ content: '第2チャンクの内容', index: 1 });
       expect(mockLLMClient.generateText).toHaveBeenCalledWith(
         expect.stringContaining('以下のテキストを意味的に自然な境界で分割してください'),
         expect.objectContaining({
@@ -39,50 +39,50 @@ describe('SemanticChunker', () => {
       );
     });
 
-    it('should filter empty chunks', async () => {
+    it('空のチャンクをフィルタリングする', async () => {
       const mockResponseText = JSON.stringify({
         chunks: [
-          { content: 'Valid chunk', index: 0 },
+          { content: '有効なチャンク', index: 0 },
           { content: '', index: 1 },
           { content: '   ', index: 2 },
-          { content: 'Another valid chunk', index: 3 },
+          { content: 'もう一つの有効なチャンク', index: 3 },
         ],
       });
 
       vi.mocked(mockLLMClient.generateText).mockResolvedValue(mockResponseText);
 
-      const result = await chunker.chunk('Test text');
+      const result = await chunker.chunk('テストテキスト');
 
       expect(result).toHaveLength(2);
-      expect(result[0]).toEqual({ content: 'Valid chunk', index: 0 });
-      expect(result[1]).toEqual({ content: 'Another valid chunk', index: 1 });
+      expect(result[0]).toEqual({ content: '有効なチャンク', index: 0 });
+      expect(result[1]).toEqual({ content: 'もう一つの有効なチャンク', index: 1 });
     });
 
-    it('should fall back to paragraph splitting when LLM fails', async () => {
-      vi.mocked(mockLLMClient.generateText).mockRejectedValue(new Error('API Error'));
+    it('LLMが失敗した時に段落分割にフォールバックする', async () => {
+      vi.mocked(mockLLMClient.generateText).mockRejectedValue(new Error('APIエラー'));
 
-      const text = 'First paragraph.\n\nSecond paragraph.\n\nThird paragraph.';
+      const text = '第1段落。\n\n第2段落。\n\n第3段落。';
       const result = await chunker.chunk(text);
 
       expect(result).toHaveLength(3);
-      expect(result[0]).toEqual({ content: 'First paragraph.', index: 0 });
-      expect(result[1]).toEqual({ content: 'Second paragraph.', index: 1 });
-      expect(result[2]).toEqual({ content: 'Third paragraph.', index: 2 });
+      expect(result[0]).toEqual({ content: '第1段落。', index: 0 });
+      expect(result[1]).toEqual({ content: '第2段落。', index: 1 });
+      expect(result[2]).toEqual({ content: '第3段落。', index: 2 });
     });
 
-    it('should handle text without paragraphs in fallback', async () => {
-      vi.mocked(mockLLMClient.generateText).mockRejectedValue(new Error('API Error'));
+    it('フォールバック時に段落がないテキストを処理する', async () => {
+      vi.mocked(mockLLMClient.generateText).mockRejectedValue(new Error('APIエラー'));
 
-      const text = 'Single line text without paragraphs';
+      const text = '段落のない単一行テキスト';
       const result = await chunker.chunk(text);
 
       expect(result).toHaveLength(1);
-      expect(result[0]).toEqual({ content: 'Single line text without paragraphs', index: 0 });
+      expect(result[0]).toEqual({ content: '段落のない単一行テキスト', index: 0 });
     });
 
-    it('should use custom options', async () => {
+    it('カスタムオプションを使用する', async () => {
       const mockResponseText = JSON.stringify({
-        chunks: [{ content: 'Chunk', index: 0 }],
+        chunks: [{ content: 'チャンク', index: 0 }],
       });
 
       vi.mocked(mockLLMClient.generateText).mockResolvedValue(mockResponseText);
@@ -92,7 +92,7 @@ describe('SemanticChunker', () => {
         language: '英語',
       };
 
-      await chunker.chunk('Test text', options);
+      await chunker.chunk('テストテキスト', options);
 
       expect(mockLLMClient.generateText).toHaveBeenCalledWith(
         expect.stringContaining('英語の文章構造を考慮する'),
