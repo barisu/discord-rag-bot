@@ -26,7 +26,8 @@
   "dependencies": {
     "discord.js": "^14.14.0",
     "hono": "^4.8.5",
-    "@shared/types": "*"
+    "@shared/core": "*",
+    "@rag/core": "*"
   },
   "devDependencies": {
     "@types/node": "^24.0.15",

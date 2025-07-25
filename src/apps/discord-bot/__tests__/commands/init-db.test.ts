@@ -1,19 +1,27 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { InitDbCommand } from '../../src/commands/init-db';
-import { MessageFetcher, type MessageData } from '@shared/discord/message-fetcher';
-import { LinkProcessor, type ProcessedContent } from '@shared/content/link-processor';
+import { MessageFetcher, type MessageData } from '@shared/core';
+import { LinkProcessor, type ProcessedContent } from '@shared/core';
 import { getTestDatabase, clearTestData } from '../../../../packages/shared/__tests__/helpers/database';
 import { Message, GuildMember, PermissionsBitField } from 'discord.js';
-import { getDatabaseConnection } from '@shared/database';
+import { getDatabaseConnection } from '@shared/core';
 
 // モジュールモック
-vi.mock('@shared/discord/message-fetcher');
-vi.mock('@shared/content/link-processor');
-vi.mock('@shared/database', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@shared/database')>();
+vi.mock('@shared/core', async () => {
+  const actual = await vi.importActual('@shared/core');
   return {
     ...actual,
-    getDatabaseConnection: vi.fn(),
+    MessageFetcher: vi.fn(),
+    LinkProcessor: vi.fn(),
+  };
+});
+vi.mock('@rag/core', async () => {
+  const actual = await vi.importActual('@rag/core');
+  return {
+    ...actual,
+    SemanticChunker: vi.fn(),
+    OpenAIEmbeddings: vi.fn(),
+    PostgresVectorStore: vi.fn(),
   };
 });
 

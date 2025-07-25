@@ -1,10 +1,10 @@
 import { Client, GatewayIntentBits, Events } from 'discord.js';
-import { validateEnvironment } from '@shared/utils';
-import { createDatabaseConnection } from '@shared/database';
+import { validateEnvironment } from '@shared/core';
+import { createDatabaseConnection } from '@shared/core';
 import { createApiServer } from './api';
-import { RagRetriever } from '@rag/retrieval';
-import { OpenAIEmbeddings } from '@rag/embeddings';
-import { PostgresVectorStore } from '@rag/vectorstore';
+import { RagRetriever } from '@rag/core';
+import { OpenAIEmbeddings } from '@rag/core';
+import { PostgresVectorStore } from '@rag/core';
 import { InitDbCommand } from './commands/init-db';
 import { SearchCommand } from './commands/search';
 
@@ -24,12 +24,12 @@ const client = new Client({
   ],
 });
 
-// Initialize RAG system
+// Initialize RAG system (after database connection)
 const embeddings = new OpenAIEmbeddings(process.env.OPENAI_API_KEY || '');
 const vectorStore = new PostgresVectorStore();
 const ragRetriever = new RagRetriever(embeddings, vectorStore);
 
-// Initialize commands
+// Initialize commands (after database connection)
 const initDbCommand = new InitDbCommand(client);
 const searchCommand = new SearchCommand(client);
 

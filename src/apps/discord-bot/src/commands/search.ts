@@ -59,14 +59,22 @@ export class SearchCommand {
         return;
       }
 
-      // RAG検索を実行
+      // Hybrid検索を実行（RAG + キーワード検索）
       const startTime = Date.now();
-      const ragResponse = await this.ragRetriever.query({
-        query,
-        userId: message.author.id,
-        guildId: message.guildId || undefined,
-        contextLimit: 5,
-      });
+      
+      // クエリのembeddingを生成
+      const queryEmbedding = await new OpenAIEmbeddings(process.env.OPENAI_API_KEY!).embed(query);
+      
+      // Hybrid検索を実行
+      const hybridResults = await this.vectorStore.hybridSearch(queryEmbedding, 5, 0.7, 0.6);
+      
+      // RAG応答形式に変換
+      const ragResponse = {
+        answer: this.generateAnswerFromSources(query, hybridResults),
+        sources: hybridResults,
+        confidence: this.calculateConfidence(hybridResults),
+        processingTime: Date.now() - startTime,
+      };
 
       // 検索結果のEmbed作成
       const embed = await this.createSearchResultEmbed(query, ragResponse, documentCount, startTime);
@@ -155,12 +163,22 @@ export class SearchCommand {
         : source.content;
 
       const metadata = source.metadata;
+      const sourceDoc = metadata?.sourceDocument;
+      const searchMethod = metadata?.searchMethod || 'rag';
+      const chunkIndex = metadata?.chunkIndex || 0;
+      
       const sourceInfo = [
         `**類似度**: ${similarity}%`,
+        `**検索方式**: ${searchMethod === 'keyword' ? 'キーワード検索' : searchMethod === 'hybrid' ? 'ハイブリッド検索' : 'RAG検索'}`,
+        metadata?.matchedKeyword ? `**マッチキーワード**: ${metadata.matchedKeyword}` : null,
+        metadata?.bm25Score ? `**BM25スコア**: ${metadata.bm25Score.toFixed(3)}` : null,
+        `**チャンク**: ${chunkIndex + 1}番目`,
+        sourceDoc?.title ? `**タイトル**: ${sourceDoc.title}` : null,
+        sourceDoc?.url ? `**URL**: ${sourceDoc.url}` : null,
+        sourceDoc?.metadata?.domain ? `**ドメイン**: ${sourceDoc.metadata.domain}` : null,
         metadata?.messageId ? `**メッセージID**: ${metadata.messageId}` : null,
-        metadata?.channelName ? `**チャンネル**: #${metadata.channelName}` : null,
-        metadata?.authorName ? `**投稿者**: ${metadata.authorName}` : null,
-        metadata?.createdAt ? `**投稿日**: ${new Date(metadata.createdAt).toLocaleDateString('ja-JP')}` : null,
+        metadata?.channelId ? `**チャンネルID**: ${metadata.channelId}` : null,
+        metadata?.authorId ? `**投稿者ID**: ${metadata.authorId}` : null,
       ].filter(Boolean).join('\n');
 
       embed.addFields({
@@ -276,6 +294,51 @@ export class SearchCommand {
     } catch (error) {
       console.warn('Failed to log search query:', error);
     }
+  }
+
+  /**
+   * ソースから回答を生成
+   */
+  private generateAnswerFromSources(query: string, sources: Source[]): string {
+    if (sources.length === 0) {
+      return "関連する情報が見つかりませんでした。別のキーワードで検索してみてください。";
+    }
+
+    // 関連度の高い上位3つのソースから回答を生成
+    const topSources = sources.slice(0, 3);
+    const context = topSources.map((source, index) => {
+      const metadata = source.metadata;
+      const sourceDoc = metadata?.sourceDocument;
+      const title = sourceDoc?.title || 'タイトル不明';
+      const domain = sourceDoc?.metadata?.domain || '不明なソース';
+      const chunkIndex = metadata?.chunkIndex || 0;
+      const searchMethod = metadata?.searchMethod || 'rag';
+      const matchedKeyword = metadata?.matchedKeyword;
+      
+      let sourceInfo = `**ソース${index + 1}** - ${title} (${domain})`;
+      if (searchMethod === 'keyword' && matchedKeyword) {
+        sourceInfo += ` [キーワード: ${matchedKeyword}]`;
+      } else if (searchMethod === 'hybrid') {
+        sourceInfo += ` [ハイブリッド検索]`;
+      }
+      sourceInfo += ` [チャンク${chunkIndex + 1}]`;
+      
+      return `${sourceInfo}\n` +
+             `URL: ${sourceDoc?.url || '不明'}\n` +
+             `内容: ${source.content.length > 300 ? source.content.substring(0, 300) + '...' : source.content}`;
+    }).join('\n\n');
+
+    return `検索結果に基づいて関連する情報をお示しします：\n\n${context}`;
+  }
+
+  /**
+   * 信頼度を計算
+   */
+  private calculateConfidence(sources: Source[]): number {
+    if (sources.length === 0) return 0;
+    
+    const avgSimilarity = sources.reduce((sum, s) => sum + s.similarity, 0) / sources.length;
+    return Math.min(avgSimilarity * 100, 100);
   }
 
   /**

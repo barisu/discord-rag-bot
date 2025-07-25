@@ -7,18 +7,43 @@ export class SemanticChunker {
   async chunk(text: string, options?: ChunkingOptions): Promise<TextChunk[]> {
     const prompt = this.buildChunkingPrompt(text, options);
     
-    try {
-      const response = await this.llmClient.generateText(prompt, {
-        temperature: 0.1, // 一貫性のため低い温度設定
-        maxTokens: 4000,
-      });
+    // 複数回リトライしてからフォールバック
+    for (let attempt = 1; attempt <= 2; attempt++) {
+      try {
+        console.log(`[SemanticChunker] Attempt ${attempt}/2 for text length: ${text.length}`);
+        
+        const response = await this.llmClient.generateText(prompt, {
+          temperature: 0.1, // 一貫性のため低い温度設定
+          maxTokens: 4000,
+        });
 
-      return parseChunkingResponse(response);
-    } catch (error) {
-      // フォールバック: シンプルな段落分割
-      console.warn('LLM chunking failed, falling back to simple paragraph splitting:', error);
-      return this.fallbackChunk(text);
+        console.log(`[SemanticChunker] Raw response length: ${response.length}`);
+        console.log(`[SemanticChunker] Response preview: ${response.substring(0, 200)}...`);
+
+        const chunks = parseChunkingResponse(response);
+        console.log(`[SemanticChunker] Successfully parsed ${chunks.length} chunks`);
+        
+        return chunks;
+        
+      } catch (error) {
+        console.warn(`[SemanticChunker] Attempt ${attempt} failed:`, error);
+        
+        if (attempt === 2) {
+          // 最後の試行でも失敗した場合、詳細なログを出力
+          console.error('[SemanticChunker] All attempts failed, using fallback chunking');
+          console.error('[SemanticChunker] Original text length:', text.length);
+          console.error('[SemanticChunker] Prompt used:', prompt.substring(0, 500) + '...');
+          
+          return this.fallbackChunk(text);
+        }
+        
+        // 次の試行前に少し待機
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      }
     }
+    
+    // この行には到達しないはずだが、TypeScriptの完全性チェックのため
+    return this.fallbackChunk(text);
   }
 
   private buildChunkingPrompt(text: string, options?: ChunkingOptions): string {
@@ -35,13 +60,16 @@ export class SemanticChunker {
 - 各チャンクは概ね${maxChunkSize}文字以下にする
 - 空のチャンクは作成しない
 
-以下のJSON形式で返してください：
+IMPORTANT: 以下の正確なJSON形式でのみ返してください。他の説明やテキストは一切含めないでください：
+
+\`\`\`json
 {
   "chunks": [
     {"content": "チャンク1の内容", "index": 0},
     {"content": "チャンク2の内容", "index": 1}
   ]
 }
+\`\`\`
 
 テキスト:
 ${text}`;
