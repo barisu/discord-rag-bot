@@ -15,8 +15,13 @@ export class SearchCommand {
   private vectorStore: PostgresVectorStore;
 
   constructor(client: Client) {
+    // API key チェック
+    if (!process.env.OPENAI_API_KEY) {
+      throw new Error('OPENAI_API_KEY is required for search functionality');
+    }
+    
     // RAGシステムを初期化
-    const embeddings = new OpenAIEmbeddings(process.env.OPENAI_API_KEY || '');
+    const embeddings = new OpenAIEmbeddings(process.env.OPENAI_API_KEY);
     this.vectorStore = new PostgresVectorStore();
     this.ragRetriever = new RagRetriever(embeddings, this.vectorStore);
   }

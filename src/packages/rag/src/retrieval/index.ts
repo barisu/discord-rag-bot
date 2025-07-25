@@ -46,13 +46,22 @@ export class RagRetriever {
 
   private async generateAnswer(query: string, sources: Source[]): Promise<string> {
     if (sources.length === 0) {
-      return "I don't have enough information to answer your question.";
+      return "関連する情報が見つかりませんでした。別のキーワードで検索してみてください。";
     }
 
-    // Simple context-based response
-    // In a real implementation, this would use an LLM
-    const context = sources.map(s => s.content).join('\n\n');
-    return `Based on the available information: ${context.slice(0, 500)}...`;
+    // 関連度の高い上位3つのソースから回答を生成
+    const topSources = sources.slice(0, 3);
+    const context = topSources.map((source, index) => {
+      const metadata = source.metadata;
+      const title = metadata?.title || 'タイトル不明';
+      const domain = metadata?.domain || '不明なソース';
+      
+      return `**ソース${index + 1}** (${domain})\n` +
+             `タイトル: ${title}\n` +
+             `内容: ${source.content.length > 300 ? source.content.substring(0, 300) + '...' : source.content}`;
+    }).join('\n\n');
+
+    return `検索結果に基づいて関連する情報をお示しします：\n\n${context}`;
   }
 
   private calculateConfidence(sources: Source[]): number {

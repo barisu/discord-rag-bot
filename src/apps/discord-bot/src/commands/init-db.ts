@@ -1,17 +1,35 @@
 import { Message, PermissionFlagsBits, ChannelType } from 'discord.js';
 import { MessageFetcher, MessageData } from '@shared/discord/message-fetcher';
 import { LinkProcessor, ProcessedContent } from '@shared/content/link-processor';
+import { GeminiClient } from '@shared/llm/gemini-client';
+import { SemanticChunker } from '@rag/chunking';
+import { OpenAIEmbeddings } from '@rag/embeddings';
 import { getDatabaseConnection } from '@shared/database';
-import { initJobs, documents, discordMessages, NewDbInitJob } from '@shared/database/schema';
+import { initJobs, documents, discordMessages, embeddings, NewDbInitJob } from '@shared/database/schema';
 import { eq, and } from 'drizzle-orm';
 
 export class InitDbCommand {
   private messageFetcher: MessageFetcher;
   private linkProcessor: LinkProcessor;
+  private geminiClient: GeminiClient;
+  private chunker: SemanticChunker;
+  private embeddings: OpenAIEmbeddings;
 
   constructor(client: any) {
     this.messageFetcher = new MessageFetcher(client);
     this.linkProcessor = new LinkProcessor();
+    
+    // API key チェック
+    if (!process.env.GEMINI_API_KEY) {
+      throw new Error('GEMINI_API_KEY is required for chunking');
+    }
+    if (!process.env.OPENAI_API_KEY) {
+      throw new Error('OPENAI_API_KEY is required for embeddings');
+    }
+    
+    this.geminiClient = new GeminiClient(process.env.GEMINI_API_KEY);
+    this.chunker = new SemanticChunker(this.geminiClient);
+    this.embeddings = new OpenAIEmbeddings(process.env.OPENAI_API_KEY);
   }
 
   async execute(message: Message, args: string[]): Promise<void> {
@@ -173,23 +191,50 @@ export class InitDbCommand {
           const processedContents = await this.linkProcessor.processLinks(message.links);
           
           for (const content of processedContents) {
-            await db
-              .insert(documents)
-              .values({
-                content: content.content,
-                source: content.originalUrl,
-                metadata: {
-                  title: content.title,
-                  description: content.metadata.description,
-                  domain: content.metadata.domain,
-                  messageId: message.id,
-                  channelId: message.channelId,
-                  authorId: message.authorId,
-                  processedAt: content.metadata.processedAt,
-                },
-              });
+            // コンテンツをチャンク化
+            const chunks = await this.chunker.chunk(content.content);
             
-            totalDocuments++;
+            for (const chunk of chunks) {
+              // ドキュメント保存
+              const [doc] = await db
+                .insert(documents)
+                .values({
+                  content: chunk.content,
+                  source: content.originalUrl,
+                  metadata: {
+                    title: content.title,
+                    description: content.metadata.description,
+                    domain: content.metadata.domain,
+                    messageId: message.id,
+                    channelId: message.channelId,
+                    authorId: message.authorId,
+                    processedAt: content.metadata.processedAt,
+                    extractionMethod: content.metadata.extractionMethod,
+                    chunkInfo: {
+                      index: chunk.index,
+                      totalChunks: chunks.length,
+                      originalContentLength: content.content.length,
+                    }
+                  },
+                })
+                .returning();
+              
+              // Embedding生成・保存
+              try {
+                const embedding = await this.embeddings.embed(chunk.content);
+                await db
+                  .insert(embeddings)
+                  .values({
+                    documentId: doc.id,
+                    embedding,
+                  });
+              } catch (embeddingError) {
+                console.error(`Error generating embedding for document ${doc.id}:`, embeddingError);
+                // embedding生成に失敗してもドキュメント保存は続行
+              }
+              
+              totalDocuments++;
+            }
           }
 
           // 進捗更新（10件ごと）
@@ -204,7 +249,8 @@ export class InitDbCommand {
             await statusMessage.edit(
               `🔍 **リンク処理中...**\n` +
               `💬 処理済みメッセージ: ${i + 1}/${messagesWithLinks.length}\n` +
-              `📄 作成済みドキュメント: ${totalDocuments}\n` +
+              `📄 作成済みチャンク: ${totalDocuments}\n` +
+              `🤖 チャンク化・埋め込み処理中...\n` +
               `⏳ 残り約${messagesWithLinks.length - i}件...`
             );
           }
@@ -231,7 +277,8 @@ export class InitDbCommand {
         `📊 **処理結果:**\n` +
         `💬 処理したメッセージ: ${messages.length}件\n` +
         `🔗 発見したリンク: ${totalLinks}件\n` +
-        `📄 作成したドキュメント: ${totalDocuments}件\n\n` +
+        `📄 作成したチャンク: ${totalDocuments}件\n` +
+        `🔮 埋め込みベクトル: ${totalDocuments}件\n\n` +
         `🎉 RAG機能が利用可能になりました！`
       );
 

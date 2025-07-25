@@ -18,7 +18,7 @@ export const documents = pgTable('documents', {
 export const embeddings = pgTable('embeddings', {
   id: serial('id').primaryKey(),
   documentId: serial('document_id').references(() => documents.id, { onDelete: 'cascade' }).notNull(),
-  embedding: vector('embedding',{dimensions: 1534}), // OpenAI embedding dimension
+  embedding: vector('embedding',{dimensions: 1536}), // OpenAI text-embedding-3-small dimension
   createdAt: timestamp('created_at').defaultNow().notNull(),
 }, (table) => ({
   documentIdIdx: index('document_id_idx').on(table.documentId),
