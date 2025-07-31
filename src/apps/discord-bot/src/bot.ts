@@ -1,19 +1,20 @@
 import { Client, GatewayIntentBits, Events } from 'discord.js';
-import { validateEnvironment } from '@shared/core';
-import { createDatabaseConnection } from '@shared/core';
+import { bootstrap, registerRagServices, setContainer, SERVICES } from '@shared/core';
 import { createApiServer } from './api';
 import { RagRetriever } from '@rag/core';
 import { OpenAIEmbeddings } from '@rag/core';
 import { PostgresVectorStore } from '@rag/core';
-import { InitDbCommand } from './commands/init-db';
+import { InitDbCommand } from './commands/init-db-refactored';
 import { SearchCommand } from './commands/search';
 
-// Validate required environment variables
-validateEnvironment(['DISCORD_TOKEN', 'DATABASE_URL']);
+// アプリケーションをブートストラップ
+const { container, config, logger } = bootstrap();
 
-// Initialize database connection
-const databaseUrl = process.env.DATABASE_URL!;
-createDatabaseConnection(databaseUrl);
+// RAGサービスを登録
+registerRagServices(container);
+
+// グローバルコンテナを設定
+setContainer(container);
 
 const client = new Client({
   intents: [
@@ -24,13 +25,19 @@ const client = new Client({
   ],
 });
 
+// DiscordクライアントをMessageFetcherサービス用に登録
+container.registerSingleton(SERVICES.MESSAGE_FETCHER, () => {
+  const { MessageFetcher } = require('@shared/core');
+  return new MessageFetcher(client);
+});
+
 // Initialize RAG system (after database connection)
 const embeddings = new OpenAIEmbeddings(process.env.OPENAI_API_KEY || '');
 const vectorStore = new PostgresVectorStore();
 const ragRetriever = new RagRetriever(embeddings, vectorStore);
 
 // Initialize commands (after database connection)
-const initDbCommand = new InitDbCommand(client);
+const initDbCommand = new InitDbCommand();
 const searchCommand = new SearchCommand(client);
 
 // Start internal API server for health checks

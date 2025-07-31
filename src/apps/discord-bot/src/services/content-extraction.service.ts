@@ -80,7 +80,7 @@ export class ContentExtractionService {
         }
 
       } catch (error) {
-        this.logger.warn('Failed to process message links', error instanceof Error ? error : undefined, {
+        this.logger.warn('Failed to process message links', {
           messageId: message.id,
           linkCount: message.links.length,
         });
@@ -118,7 +118,7 @@ export class ContentExtractionService {
         const results = await this.linkProcessor.processLinks([link]);
         return results[0] || null;
       } catch (error) {
-        this.logger.debug('Failed to process link', error instanceof Error ? error : undefined, { link });
+        this.logger.debug('Failed to process link', { link });
         return null;
       }
     });

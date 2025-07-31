@@ -1,7 +1,5 @@
 import type {
   KeywordExtractor,
-  OpenAIEmbeddings,
-  PostgresVectorStore,
   Logger,
   ProgressTracker,
 } from '@shared/core';
@@ -34,8 +32,8 @@ export class KeywordExtractionService {
 
   constructor(
     private readonly keywordExtractor: KeywordExtractor,
-    private readonly embeddings: OpenAIEmbeddings,
-    private readonly vectorStore: PostgresVectorStore,
+    private readonly embeddings: any,
+    private readonly vectorStore: any,
     private readonly logger: Logger
   ) {}
 
@@ -132,7 +130,7 @@ export class KeywordExtractionService {
         };
 
       } catch (error) {
-        this.logger.warn(`Keyword extraction attempt ${attempt} failed`, error instanceof Error ? error : undefined, {
+        this.logger.warn(`Keyword extraction attempt ${attempt} failed`, {
           chunkId: chunk.chunkId,
           attempt,
           maxRetries: KeywordExtractionService.MAX_RETRIES,

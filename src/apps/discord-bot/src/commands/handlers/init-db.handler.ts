@@ -2,10 +2,7 @@ import { Message, PermissionFlagsBits } from 'discord.js';
 import type {
   MessageFetcher,
   LinkProcessor,
-  OpenAIEmbeddings,
-  SemanticChunker,
   KeywordExtractor,
-  PostgresVectorStore,
   Logger,
   Config
 } from '@shared/core';
@@ -43,10 +40,10 @@ export class InitDbCommandHandler {
   constructor(
     messageFetcher: MessageFetcher,
     linkProcessor: LinkProcessor,
-    embeddings: OpenAIEmbeddings,
-    chunker: SemanticChunker,
+    embeddings: any,
+    chunker: any,
     keywordExtractor: KeywordExtractor,
-    vectorStore: PostgresVectorStore,
+    vectorStore: any,
     config: Config,
     baseLogger: Logger
   ) {

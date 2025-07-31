@@ -4,10 +4,7 @@ import {
   SERVICES,
   type MessageFetcher,
   type LinkProcessor,
-  type OpenAIEmbeddings,
-  type SemanticChunker,
   type KeywordExtractor,
-  type PostgresVectorStore,
   type Logger,
   type Config
 } from '@shared/core';
@@ -24,10 +21,10 @@ export class InitDbCommand {
     // サービスコンテナから依存関係を解決
     const messageFetcher = resolveService<MessageFetcher>(SERVICES.MESSAGE_FETCHER);
     const linkProcessor = resolveService<LinkProcessor>(SERVICES.LINK_PROCESSOR);
-    const embeddings = resolveService<OpenAIEmbeddings>(SERVICES.OPENAI_EMBEDDINGS);
-    const chunker = resolveService<SemanticChunker>(SERVICES.SEMANTIC_CHUNKER);
+    const embeddings = resolveService(SERVICES.OPENAI_EMBEDDINGS);
+    const chunker = resolveService(SERVICES.SEMANTIC_CHUNKER);
     const keywordExtractor = resolveService<KeywordExtractor>(SERVICES.KEYWORD_EXTRACTOR);
-    const vectorStore = resolveService<PostgresVectorStore>(SERVICES.VECTOR_STORE);
+    const vectorStore = resolveService(SERVICES.VECTOR_STORE);
     const config = resolveService<Config>(SERVICES.CONFIG);
     const logger = resolveService<Logger>(SERVICES.LOGGER);
 

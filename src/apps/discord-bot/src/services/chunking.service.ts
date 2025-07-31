@@ -1,5 +1,4 @@
 import type {
-  SemanticChunker,
   ProcessedContent,
   Logger,
   ProgressTracker,
@@ -29,7 +28,7 @@ export class ChunkingService {
   private readonly chunkOverlap: number;
 
   constructor(
-    private readonly chunker: SemanticChunker,
+    private readonly chunker: any,
     private readonly config: Config,
     private readonly logger: Logger
   ) {
@@ -80,7 +79,7 @@ export class ChunkingService {
         });
 
       } catch (error) {
-        this.logger.warn('Failed to chunk document', error instanceof Error ? error : undefined, {
+        this.logger.warn('Failed to chunk document', {
           sourceDocId,
           contentLength: content.content.length,
         });

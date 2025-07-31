@@ -16,7 +16,7 @@ import { getDatabaseConnection, discordMessages } from '@shared/core';
  */
 export class MessageProcessingService {
   constructor(
-    private readonly messageFetcher: MessageFetcher,
+    public readonly messageFetcher: MessageFetcher,
     private readonly logger: Logger
   ) {}
 

@@ -93,6 +93,46 @@ export function registerCoreServices(container: ServiceContainer, options: Boots
 }
 
 /**
+ * RAG関連サービスを登録する
+ */
+export function registerRagServices(container: ServiceContainer): void {
+  // OpenAI Embeddings を登録（シングルトン）
+  container.registerSingleton(SERVICES.OPENAI_EMBEDDINGS, (container) => {
+    const config = container.get<Config>(SERVICES.CONFIG);
+    const logger = container.get<Logger>(SERVICES.LOGGER);
+    
+    logger.debug('Creating OpenAI embeddings service');
+    
+    // 動的インポート
+    const { OpenAIEmbeddings } = require('@rag/core');
+    return new OpenAIEmbeddings(config.OPENAI_API_KEY);
+  });
+
+  // Semantic Chunker を登録（シングルトン）
+  container.registerSingleton(SERVICES.SEMANTIC_CHUNKER, (container) => {
+    const geminiClient = container.get<GeminiClient>(SERVICES.GEMINI_CLIENT);
+    const logger = container.get<Logger>(SERVICES.LOGGER);
+    
+    logger.debug('Creating semantic chunker');
+    
+    // 動的インポート
+    const { SemanticChunker } = require('@rag/core');
+    return new SemanticChunker(geminiClient);
+  });
+
+  // Postgres Vector Store を登録（シングルトン）
+  container.registerSingleton(SERVICES.VECTOR_STORE, (container) => {
+    const logger = container.get<Logger>(SERVICES.LOGGER);
+    
+    logger.debug('Creating postgres vector store');
+    
+    // 動的インポート
+    const { PostgresVectorStore } = require('@rag/core');
+    return new PostgresVectorStore();
+  });
+}
+
+/**
  * アプリケーション初期化のブートストラップ
  */
 export function bootstrap(options: BootstrapOptions = {}): {

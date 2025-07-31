@@ -1,5 +1,4 @@
 import type {
-  OpenAIEmbeddings,
   Logger,
   ProgressTracker,
 } from '@shared/core';
@@ -29,7 +28,7 @@ export class EmbeddingService {
   private static readonly BATCH_SIZE = 10;
 
   constructor(
-    private readonly embeddings: OpenAIEmbeddings,
+    private readonly embeddings: any,
     private readonly logger: Logger
   ) {}
 
@@ -66,7 +65,7 @@ export class EmbeddingService {
         results.push(...batchResults);
 
       } catch (error) {
-        this.logger.warn('Batch embedding generation failed', error instanceof Error ? error : undefined, {
+        this.logger.warn('Batch embedding generation failed', {
           batchStart: i,
           batchSize: batch.length,
         });
@@ -160,7 +159,7 @@ export class EmbeddingService {
         };
 
       } catch (error) {
-        this.logger.warn(`Embedding attempt ${attempt} failed`, error instanceof Error ? error : undefined, {
+        this.logger.warn(`Embedding attempt ${attempt} failed`, {
           chunkId: chunk.chunkId,
           attempt,
           maxRetries: EmbeddingService.MAX_RETRIES,
