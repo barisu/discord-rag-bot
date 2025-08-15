@@ -53,8 +53,17 @@ const botEnv = {
   ...process.env,
   DISCORD_TOKEN: process.env.INTEGRATION_DISCORD_TOKEN,
   DATABASE_URL: process.env.INTEGRATION_DATABASE_URL,
-  NODE_ENV: 'integration',
-  API_PORT: process.env.INTEGRATION_API_PORT || '3002'
+  NODE_ENV: 'test',
+  API_PORT: process.env.INTEGRATION_API_PORT || '3002',
+  GEMINI_API_KEY: process.env.GEMINI_API_KEY,
+  OPENAI_API_KEY: process.env.OPENAI_API_KEY,
+  LOG_LEVEL: process.env.LOG_LEVEL || 'info',
+  CHUNK_SIZE: process.env.CHUNK_SIZE || '1000',
+  CHUNK_OVERLAP: process.env.CHUNK_OVERLAP || '200',
+  MAX_CHUNKS_PER_QUERY: process.env.MAX_CHUNKS_PER_QUERY || '5',
+  MAX_KEYWORDS: process.env.MAX_KEYWORDS || '8',
+  MIN_CONFIDENCE: process.env.MIN_CONFIDENCE || '0.6',
+  MIN_BM25_SCORE: process.env.MIN_BM25_SCORE || '0.1'
 };
 
 console.log('🔧 Bot設定確認:');

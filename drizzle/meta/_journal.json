@@ -5,29 +5,8 @@
     {
       "idx": 0,
       "version": "7",
-      "when": 1753089920177,
-      "tag": "0000_worthless_cerise",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "7",
-      "when": 1753399136478,
-      "tag": "0001_tired_tomorrow_man",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "7",
-      "when": 1753448552647,
-      "tag": "0002_dazzling_marrow",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "7",
-      "when": 1753450829735,
-      "tag": "0003_lovely_iron_lad",
+      "when": 1755268954877,
+      "tag": "0000_busy_psynapse",
       "breakpoints": true
     }
   ]

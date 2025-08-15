@@ -147,7 +147,6 @@ export class JobManagementService {
     finalStats: {
       linksFound: number;
       documentsCreated: number;
-      keywordsExtracted: number;
     }
   ): Promise<void> {
     const db = getDatabaseConnection();
@@ -160,7 +159,6 @@ export class JobManagementService {
           completedAt: new Date(),
           linksFound: finalStats.linksFound,
           documentsCreated: finalStats.documentsCreated,
-          keywordsExtracted: finalStats.keywordsExtracted,
         })
         .where(eq(initJobs.id, jobId));
     });

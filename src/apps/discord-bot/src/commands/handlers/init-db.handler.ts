@@ -2,9 +2,7 @@ import { Message, PermissionFlagsBits } from 'discord.js';
 import type {
   MessageFetcher,
   LinkProcessor,
-  KeywordExtractor,
   Logger,
-  Config
 } from '@shared/core';
 import {
   PermissionError,
@@ -17,9 +15,6 @@ import {
 import {
   MessageProcessingService,
   ContentExtractionService,
-  ChunkingService,
-  EmbeddingService,
-  KeywordExtractionService,
   JobManagementService,
   type JobInfo
 } from '../../services';
@@ -32,19 +27,11 @@ export class InitDbCommandHandler {
   private readonly logger: Logger;
   private readonly messageProcessingService: MessageProcessingService;
   private readonly contentExtractionService: ContentExtractionService;
-  private readonly chunkingService: ChunkingService;
-  private readonly embeddingService: EmbeddingService;
-  private readonly keywordExtractionService: KeywordExtractionService;
   private readonly jobManagementService: JobManagementService;
 
   constructor(
     messageFetcher: MessageFetcher,
     linkProcessor: LinkProcessor,
-    embeddings: any,
-    chunker: any,
-    keywordExtractor: KeywordExtractor,
-    vectorStore: any,
-    config: Config,
     baseLogger: Logger
   ) {
     this.logger = createContextLogger(baseLogger, 'InitDbCommandHandler');
@@ -52,14 +39,6 @@ export class InitDbCommandHandler {
     // サービス層を初期化
     this.messageProcessingService = new MessageProcessingService(messageFetcher, this.logger);
     this.contentExtractionService = new ContentExtractionService(linkProcessor, this.logger);
-    this.chunkingService = new ChunkingService(chunker, config, this.logger);
-    this.embeddingService = new EmbeddingService(embeddings, this.logger);
-    this.keywordExtractionService = new KeywordExtractionService(
-      keywordExtractor,
-      embeddings,
-      vectorStore,
-      this.logger
-    );
     this.jobManagementService = new JobManagementService(this.logger);
   }
 
@@ -186,9 +165,6 @@ export class InitDbCommandHandler {
       const progressTracker = new ProgressBuilder()
         .addPhase('メッセージ取得', 30)
         .addPhase('コンテンツ抽出', 25)
-        .addPhase('チャンク化', 15)
-        .addPhase('埋め込み生成', 15)
-        .addPhase('キーワード抽出', 15)
         .build();
 
       // 各フェーズを実行
@@ -233,7 +209,6 @@ export class InitDbCommandHandler {
   ): Promise<{
     linksFound: number;
     documentsCreated: number;
-    keywordsExtracted: number;
   }> {
     // フェーズ1: メッセージ処理
     progressTracker.update({ currentStep: 'メッセージを取得しています...' });
@@ -259,24 +234,9 @@ export class InitDbCommandHandler {
       documentsCreated: extractedContents.length,
     });
 
-    // フェーズ3: チャンク化
-    const chunks = await this.chunkingService.processChunks(extractedContents, progressTracker);
-
-    // フェーズ4: 埋め込み生成
-    const embeddingResults = await this.embeddingService.generateEmbeddings(chunks, progressTracker);
-
-    // フェーズ5: キーワード抽出
-    const keywordResults = await this.keywordExtractionService.extractKeywords(chunks, progressTracker);
-    const totalKeywords = keywordResults.reduce((sum, r) => sum + r.keywords.length, 0);
-
-    await this.jobManagementService.updateJobProgress(job.id, {
-      keywordsExtracted: totalKeywords,
-    });
-
     return {
       linksFound: totalLinks,
       documentsCreated: extractedContents.length,
-      keywordsExtracted: totalKeywords,
     };
   }
 
@@ -288,7 +248,6 @@ export class InitDbCommandHandler {
     stats: {
       linksFound: number;
       documentsCreated: number;
-      keywordsExtracted: number;
     }
   ): Promise<void> {
     await statusMessage.edit(
@@ -296,9 +255,7 @@ export class InitDbCommandHandler {
       `📊 **処理結果:**\n` +
       `🔗 発見したリンク: ${stats.linksFound}件\n` +
       `📄 作成したドキュメント: ${stats.documentsCreated}件\n` +
-      `🔑 抽出したキーワード: ${stats.keywordsExtracted}件\n` +
-      `🔮 埋め込みベクトル: ${stats.documentsCreated + stats.keywordsExtracted}件\n\n` +
-      `🎉 RAG + キーワード検索機能が利用可能になりました！`
+      `🎉 全文検索機能が利用可能になりました！`
     );
   }
 }

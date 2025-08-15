@@ -1,6 +1,5 @@
 import { Client, GatewayIntentBits, Events } from 'discord.js';
 import { bootstrap, registerRagServices, setContainer, SERVICES } from '@shared/core';
-import { createApiServer } from './api';
 import { RagRetriever } from '@rag/core';
 import { OpenAIEmbeddings } from '@rag/core';
 import { PostgresVectorStore } from '@rag/core';
@@ -40,13 +39,8 @@ const ragRetriever = new RagRetriever(embeddings, vectorStore);
 const initDbCommand = new InitDbCommand();
 const searchCommand = new SearchCommand(client);
 
-// Start internal API server for health checks
-const apiPort = parseInt(process.env.API_PORT || '3001');
-createApiServer();
-
 client.once(Events.ClientReady, (readyClient) => {
   console.log(`Ready! Logged in as ${readyClient.user.tag}`);
-  console.log(`Internal API server running on port ${apiPort}`);
 });
 
 client.on(Events.MessageCreate, async (message) => {
