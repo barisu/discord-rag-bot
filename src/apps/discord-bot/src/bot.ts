@@ -1,8 +1,5 @@
 import { Client, GatewayIntentBits, Events } from 'discord.js';
 import { bootstrap, registerRagServices, setContainer, SERVICES } from '@shared/core';
-import { RagRetriever } from '@rag/core';
-import { OpenAIEmbeddings } from '@rag/core';
-import { PostgresVectorStore } from '@rag/core';
 import { InitDbCommand } from './commands/init-db-refactored';
 import { SearchCommand } from './commands/search';
 
@@ -31,9 +28,6 @@ container.registerSingleton(SERVICES.MESSAGE_FETCHER, () => {
 });
 
 // Initialize RAG system (after database connection)
-const embeddings = new OpenAIEmbeddings(process.env.OPENAI_API_KEY || '');
-const vectorStore = new PostgresVectorStore();
-const ragRetriever = new RagRetriever(embeddings, vectorStore);
 
 // Initialize commands (after database connection)
 const initDbCommand = new InitDbCommand();
@@ -66,12 +60,7 @@ client.on(Events.MessageCreate, async (message) => {
     const query = message.content.slice(5).trim();
     
     try {
-      const response = await ragRetriever.query({
-        query,
-        userId: message.author.id,
-        guildId: message.guildId || undefined,
-      });
-      
+      const response = { answer: "テスト用レスポンス。修正予定"};
       await message.reply(response.answer);
     } catch (error) {
       console.error('RAG query error:', error);

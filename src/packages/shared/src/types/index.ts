@@ -19,6 +19,25 @@ export interface Source {
   similarity: number;
 }
 
+export interface DocumentSearchResult {
+  id: number;
+  title: string | null;
+  content: string;
+  url: string;
+  metadata: Record<string, any> | null;
+  messageId: string | null;
+  channelId: string | null;
+  authorId: string | null;
+  createdAt: Date;
+}
+
+export interface DocumentSearchResponse {
+  results: DocumentSearchResult[];
+  total: number;
+  query: string;
+  processingTime: number;
+}
+
 export interface DiscordMessage {
   id: string;
   content: string;

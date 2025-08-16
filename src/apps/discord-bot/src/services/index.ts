@@ -2,3 +2,4 @@
 export * from './message-processing.service';
 export * from './content-extraction.service';
 export * from './job-management.service';
+export * from './document-search.service';
