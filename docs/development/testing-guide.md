@@ -1,6 +1,6 @@
 # テスト環境・開発ガイド
 
-最終更新: 2025-07-21
+最終更新: 2025-08-17
 
 ## 🎯 概要
 
@@ -8,14 +8,18 @@ Discord RAG Botプロジェクトの包括的なテストガイド。Vitest + Te
 
 ## 📊 テスト全体状況
 
-### テスト実行結果（全て通過✅）
+### テスト実行結果（67テスト通過）
 ```
-total: 54テスト（19.4秒）
-├── discord-bot: 11テスト（4.6秒）
-└── shared: 43テスト（15.4秒）
-    ├── Database Schema: 13テスト
-    ├── LinkProcessor: 14テスト
-    └── MessageFetcher: 16テスト
+total: 67テスト通過
+├── discord-bot: テストファイルなし（要再構築🔄）
+├── shared: 52テスト通過（全て通過✅）
+│   ├── Database Schema: 13テスト
+│   ├── LinkProcessor: 17テスト
+│   ├── MessageFetcher: 16テスト
+│   └── LLM Client: 6テスト
+└── rag: 15テスト通過（全て通過✅）
+    ├── SemanticChunker: 8テスト
+    └── ResponseParser: 7テスト
 ```
 
 ## 🛠️ テスト技術スタック
@@ -69,9 +73,10 @@ export async function clearTestData() {
 
 ## 🧪 テストカテゴリ別詳細
 
-### 1. Discord Bot テスト（11テスト）
+### 1. Discord Bot テスト（要再構築）
 
-**ファイル**: `src/apps/discord-bot/__tests__/commands/init-db.test.ts`
+**状況**: テストファイルが存在しない（再構築が必要）
+**予定ファイル**: `src/apps/discord-bot/__tests__/commands/init-db.test.ts`
 
 #### テスト分類
 - **権限チェック** (3テスト): 管理者権限、DM実行、引数検証

@@ -1,6 +1,6 @@
 # Discord RAG Bot - 開発状況
 
-最終更新: 2025-08-16
+最終更新: 2025-08-17
 
 ## 現在のリポジトリ状態
 
@@ -8,7 +8,7 @@
 
 Discord サーバーの過去ログを活用した文書検索ボットです。
 - **ESモジュール完全移行済み**: TypeScript 5.8.3 + ES2022
-- **テスト品質**: 84テスト（統合テスト含む、うち67テスト通過）
+- **テスト品質**: 67テスト通過（shared: 52テスト、rag: 15テスト - discord-botのテストは要再構築）
 - **堅牢な基盤**: npm workspaces + Drizzle ORM + PostgreSQL
 - **部分一致検索機能**: drizzle ORMによる高速文字列検索
 - **高品質コンテンツ抽出**: Mozilla Readability統合
@@ -36,7 +36,7 @@ discord-rag-bot/
 └── src/
     ├── apps/
     │   └── discord-bot/        # Discord Botアプリケーション
-    │       ├── __tests__/      # テスト（Vitest, 11テスト全通過）
+    │       ├── __tests__/      # テスト（要再構築 - 現在テストファイルなし）
     │       ├── src/
     │       │   ├── index.ts
     │       │   ├── bot.ts
@@ -138,8 +138,8 @@ discord-rag-bot/
 - **Testcontainers**: v11.3.1 (統合テスト)
 - **@types/node**: v24.0.15
 
-**テスト実行状況（67テスト通過、一部統合テストは環境変数不足で失敗）**
-- **discord-bot**: 22テスト（うち21テスト通過、1テスト失敗、統合テスト1失敗）
+**テスト実行状況（67テスト通過、Discord Botのテストは要再構築）**
+- **discord-bot**: テストファイルなし（要再構築🔄）
 - **shared**: 52テスト（全通過✅）
   - Database Schema: 13テスト
   - LinkProcessor: 17テスト（Mozilla Readability統合済み）
@@ -210,7 +210,7 @@ npm run db:studio               # Drizzle Studio起動
 **開発・品質**
 - **リンター**: ESLint
 - **型チェック**: TypeScript strict mode
-- **テストカバレッジ**: 67テスト通過（全84テスト）
+- **テストカバレッジ**: 67テスト通過（shared: 52, rag: 15, discord-bot: 要再構築）
 - **CI/CD**: 未設定（今後の課題）
 
 ### 🎯 実装済み機能
@@ -218,7 +218,7 @@ npm run db:studio               # Drizzle Studio起動
 #### ✅ **堅牢な基盤（完全実装済み）**
 1. **ESモジュール環境**: TypeScript 5.8.3 + ES2022完全移行
 2. **モノレポ構成**: npm workspaces + 効率的依存関係管理
-3. **テスト環境**: Vitest + Testcontainers統合テスト（84テスト中67テスト通過）
+3. **テスト環境**: Vitest + Testcontainers統合テスト（67テスト通過）
 4. **データベース**: PostgreSQL 16 + pgvector + Drizzle ORM
 5. **Docker環境**: 開発・テスト用コンテナ完備
 6. **品質管理**: ESLint + strict TypeScript
@@ -231,7 +231,7 @@ npm run db:studio               # Drizzle Studio起動
    - ✅ リアルタイム進捗表示
    - ✅ ジョブ管理・エラーハンドリング
    - ✅ 重複実行防止機能
-   - ✅ 完全なテストカバレッジ（22テスト中21テスト通過）
+   - ❌ テストカバレッジ（要再構築）
 
 2. **`!search` コマンド**: ドキュメント部分一致検索（新規実装）
    - ✅ ILIKEオペレータによる高速文字列検索
@@ -325,9 +325,9 @@ npm run db:studio               # Drizzle Studio起動
    - ❌ 監視ダッシュボード
 
 #### 📊 **開発進捗評価**
-- **完了率**: 約55%（基盤・データ収集・チャンキング完了）
-- **次の目標**: ベクトル検索システム実装（最重要）
-- **予想工数**: ベクトル検索 1-2週間、Bot応答機能 1-2週間
+- **完了率**: 約60%（基盤・データ収集・部分一致検索完了）
+- **次の目標**: Discord Botテスト再構築、Bot応答機能実装
+- **予想工数**: テスト再構築 1週間、Bot応答機能 1-2週間
 
 ### ⚠️ 重要な開発注意事項
 
@@ -362,9 +362,11 @@ npm run db:studio               # Drizzle Studio起動
 
 ### 🔍 主要な実装ファイル
 
-#### **Discord Bot（完全実装）**
-- `src/apps/discord-bot/src/commands/init-db.ts`: DB初期化コマンド（本格運用レベル）
-- `src/apps/discord-bot/__tests__/commands/init-db.test.ts`: 包括的テスト（11テスト）
+#### **Discord Bot（実装済み、テスト要再構築）**
+- `src/apps/discord-bot/src/commands/init-db-refactored.ts`: DB初期化コマンド（本格運用レベル）
+- `src/apps/discord-bot/src/commands/search.ts`: ドキュメント検索コマンド（完全実装）
+- `src/apps/discord-bot/src/services/document-search.service.ts`: 部分一致検索サービス
+- Discord Botのテストファイル: 要再構築
 
 #### **共有ライブラリ（プロダクション品質）**
 - `src/packages/shared/src/discord/message-fetcher.ts`: Discord API統合
@@ -388,20 +390,22 @@ npm run db:studio               # Drizzle Studio起動
 
 ### **現在の成果**
 - ✅ **技術基盤**: ESモジュール完全移行、堅牢な型システム
-- ✅ **品質保証**: 67テスト通過（全84テスト）、統合テスト完備
+- ✅ **品質保証**: 67テスト通過（shared: 52, rag: 15）、統合テスト完備
 - ✅ **検索システム**: 部分一致検索、高速・シンプル設計
 - ✅ **高品質コンテンツ処理**: Mozilla Readability統合
 - ✅ **実用機能**: DB初期化コマンド本格運用レベル
 - ✅ **開発環境**: Docker、テスト、ビルド環境完全整備
 
 ### **最重要課題**
+- 🎯 **Discord Botテスト再構築**: テストファイルの再作成・テストカバレッジ復旧
 - 🎯 **Discord Bot応答機能**: メンション応答、自動質問処理
-- 🎯 **ユーザーエクスペリエンス**: ヘルプコマンツ、システム状態確認
+- 🎯 **ユーザーエクスペリエンス**: ヘルプコマンド、システム状態確認
 
 ### **開発推奨順序**
-1. **Bot応答機能**: メンション処理、検索結果統合
-2. **ユーザーコマンド**: ヘルプ、システム状態確認
-3. **検索機能改善**: ハイライト、ページネーション
-4. **運用化**: ログ・監視・デプロイ設定
+1. **テスト再構築**: Discord Botのテストファイル作成・テストカバレッジ復旧
+2. **Bot応答機能**: メンション処理、検索結果統合
+3. **ユーザーコマンド**: ヘルプ、システム状態確認
+4. **検索機能改善**: ハイライト、ページネーション
+5. **運用化**: ログ・監視・デプロイ設定
 
 **プロジェクトは技術的に非常に堅実な基盤の上に構築されており、高品質コンテンツ抽出、データベース管理、部分一致検索機能が完成しています。RAGからシンプルな検索システムへの変更により、高速で保守管理が容易なDiscord文書検索Botとして実用段階にあります。**
