@@ -14,7 +14,8 @@ export default defineConfig({
   },
   resolve: {
     alias: {
-      '@shared': resolve(__dirname, '../../packages/shared/src')
+      '@shared/core': resolve(__dirname, '../../packages/shared/src'),
+      '@rag/core': resolve(__dirname, '../../packages/rag/src')
     }
   }
 });

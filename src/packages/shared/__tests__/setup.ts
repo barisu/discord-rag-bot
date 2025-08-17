@@ -1,14 +1,20 @@
 import { beforeAll, afterAll } from 'vitest';
+import { config } from 'dotenv';
+import { resolve } from 'path';
 
 // テスト用の環境変数設定
 beforeAll(() => {
+  // .env.testファイルを読み込み
+  const envPath = resolve(process.cwd(), '../../../.env.test');
+  config({ path: envPath });
+  
   process.env.NODE_ENV = 'test';
   process.env.LOG_LEVEL = 'error';
   
-  // テスト用のダミー環境変数
-  process.env.DATABASE_URL = 'postgresql://test:test@localhost:5432/test_db';
-  process.env.DISCORD_TOKEN = 'test_discord_token';
-  process.env.OPENAI_API_KEY = 'test_openai_key';
+  // GEMINI_API_KEYが設定されていることを確認
+  if (!process.env.GEMINI_API_KEY) {
+    console.warn('GEMINI_API_KEY is not set in .env.test file');
+  }
 });
 
 afterAll(() => {

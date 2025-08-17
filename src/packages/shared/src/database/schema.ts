@@ -1,7 +1,26 @@
 import { pgTable, serial, text, timestamp, jsonb, index, varchar, numeric, integer, customType, vector } from 'drizzle-orm/pg-core';
 import { InferInsertModel, InferSelectModel, sql } from 'drizzle-orm';
 
-// Documents table for RAG
+// Source documents table - stores original full documents
+export const sourceDocuments = pgTable('source_documents', {
+  id: serial('id').primaryKey(),
+  url: varchar('url', { length: 500 }).notNull(),
+  title: text('title'),
+  fullContent: text('full_content').notNull(),
+  metadata: jsonb('metadata').default({}),
+  messageId: varchar('message_id', { length: 20 }),
+  channelId: varchar('channel_id', { length: 20 }),
+  authorId: varchar('author_id', { length: 20 }),
+  processedAt: timestamp('processed_at').defaultNow().notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+}, (table) => ({
+  urlIdx: index('source_documents_url_idx').on(table.url),
+  messageIdIdx: index('source_documents_message_id_idx').on(table.messageId),
+  createdAtIdx: index('source_documents_created_at_idx').on(table.createdAt),
+}));
+
+// Legacy documents table (for backward compatibility during migration)
 export const documents = pgTable('documents', {
   id: serial('id').primaryKey(),
   content: text('content').notNull(),
@@ -12,18 +31,6 @@ export const documents = pgTable('documents', {
 }, (table) => ({
   sourceIdx: index('source_idx').on(table.source),
   createdAtIdx: index('created_at_idx').on(table.createdAt),
-}));
-
-// Vector embeddings table
-export const embeddings = pgTable('embeddings', {
-  id: serial('id').primaryKey(),
-  documentId: serial('document_id').references(() => documents.id, { onDelete: 'cascade' }).notNull(),
-  embedding: vector('embedding',{dimensions: 1534}), // OpenAI embedding dimension
-  createdAt: timestamp('created_at').defaultNow().notNull(),
-}, (table) => ({
-  documentIdIdx: index('document_id_idx').on(table.documentId),
-  // HNSW index for vector similarity search
-  embeddingIdx: sql`CREATE INDEX CONCURRENTLY IF NOT EXISTS embedding_hnsw_idx ON ${table} USING hnsw (embedding vector_cosine_ops)`,
 }));
 
 // Discord messages table (for context storage)
@@ -73,6 +80,7 @@ export const initJobs = pgTable('init_jobs', {
   processedMessages: integer('processed_messages').default(0),
   linksFound: integer('links_found').default(0),
   documentsCreated: integer('documents_created').default(0),
+  keywordsExtracted: integer('keywords_extracted').default(0),
   errorMessage: text('error_message'),
   startedAt: timestamp('started_at'),
   completedAt: timestamp('completed_at'),
@@ -83,10 +91,15 @@ export const initJobs = pgTable('init_jobs', {
   createdAtIdx: index('init_jobs_created_at_idx').on(table.createdAt),
 }));
 
+// New schema types
+export type DbSourceDocument = InferSelectModel<typeof sourceDocuments>;
+export type NewDbSourceDocument = InferInsertModel<typeof sourceDocuments>;
+
+// Legacy schema types (for backward compatibility)
 export type DbDocument = InferSelectModel<typeof documents>;
 export type NewDbDocument = InferInsertModel<typeof documents>;
-export type DbEmbedding = InferInsertModel<typeof embeddings>;
-export type NewDbEmbedding = InferSelectModel<typeof embeddings>;
+
+// Other types
 export type DbDiscordMessage = InferSelectModel<typeof discordMessages>;
 export type NewDbDiscordMessage = InferInsertModel<typeof discordMessages>;
 export type DbRagQuery = InferSelectModel<typeof ragQueries>;

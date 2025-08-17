@@ -1,19 +1,14 @@
 import { Client, GatewayIntentBits, Events } from 'discord.js';
-import { validateEnvironment } from '@shared/utils';
-import { createDatabaseConnection } from '@shared/database';
-import { createApiServer } from './api';
-import { RagRetriever } from '@rag/retrieval';
-import { OpenAIEmbeddings } from '@rag/embeddings';
-import { PostgresVectorStore } from '@rag/vectorstore';
-import { InitDbCommand } from './commands/init-db';
+import { bootstrap, setContainer, SERVICES } from '@shared/core';
+import { InitDbCommand } from './commands/init-db-refactored';
 import { SearchCommand } from './commands/search';
+import { MessageFetcher } from '@shared/core';
 
-// Validate required environment variables
-validateEnvironment(['DISCORD_TOKEN', 'DATABASE_URL']);
+// アプリケーションをブートストラップ
+const { container, config, logger } = bootstrap();
 
-// Initialize database connection
-const databaseUrl = process.env.DATABASE_URL!;
-createDatabaseConnection(databaseUrl);
+// グローバルコンテナを設定
+setContainer(container);
 
 const client = new Client({
   intents: [
@@ -24,22 +19,19 @@ const client = new Client({
   ],
 });
 
-// Initialize RAG system
-const embeddings = new OpenAIEmbeddings(process.env.OPENAI_API_KEY || '');
-const vectorStore = new PostgresVectorStore();
-const ragRetriever = new RagRetriever(embeddings, vectorStore);
+// DiscordクライアントをMessageFetcherサービス用に登録
+container.registerSingleton(SERVICES.MESSAGE_FETCHER, () => {
+  return new MessageFetcher(client);
+});
 
-// Initialize commands
-const initDbCommand = new InitDbCommand(client);
+// Initialize RAG system (after database connection)
+
+// Initialize commands (after database connection)
+const initDbCommand = new InitDbCommand();
 const searchCommand = new SearchCommand(client);
-
-// Start internal API server for health checks
-const apiPort = parseInt(process.env.API_PORT || '3001');
-createApiServer();
 
 client.once(Events.ClientReady, (readyClient) => {
   console.log(`Ready! Logged in as ${readyClient.user.tag}`);
-  console.log(`Internal API server running on port ${apiPort}`);
 });
 
 client.on(Events.MessageCreate, async (message) => {
@@ -65,12 +57,7 @@ client.on(Events.MessageCreate, async (message) => {
     const query = message.content.slice(5).trim();
     
     try {
-      const response = await ragRetriever.query({
-        query,
-        userId: message.author.id,
-        guildId: message.guildId || undefined,
-      });
-      
+      const response = { answer: "テスト用レスポンス。修正予定"};
       await message.reply(response.answer);
     } catch (error) {
       console.error('RAG query error:', error);

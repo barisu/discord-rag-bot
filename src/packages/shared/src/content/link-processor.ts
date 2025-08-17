@@ -1,3 +1,6 @@
+import { Readability } from '@mozilla/readability';
+import { JSDOM } from 'jsdom';
+
 export interface LinkContent {
   url: string;
   title?: string;
@@ -5,6 +8,12 @@ export interface LinkContent {
   description?: string;
   error?: string;
   statusCode?: number;
+  readability?: {
+    byline?: string;
+    siteName?: string;
+    length: number;
+    excerpt?: string;
+  };
 }
 
 export interface ProcessedContent {
@@ -16,6 +25,11 @@ export interface ProcessedContent {
     domain: string;
     processedAt: Date;
     statusCode: number;
+    byline?: string;
+    siteName?: string;
+    contentLength: number;
+    excerpt?: string;
+    extractionMethod: 'readability' | 'fallback';
   };
 }
 
@@ -55,6 +69,11 @@ export class LinkProcessor {
               domain: new URL(link).hostname,
               processedAt: new Date(),
               statusCode: content.statusCode || 200,
+              byline: content.readability?.byline,
+              siteName: content.readability?.siteName,
+              contentLength: content.readability?.length || content.content.length,
+              excerpt: content.readability?.excerpt,
+              extractionMethod: content.readability ? 'readability' : 'fallback',
             },
           });
         }
@@ -104,7 +123,7 @@ export class LinkProcessor {
       }
 
       const html = await response.text();
-      const parsed = this.parseHtmlContent(html);
+      const parsed = this.extractContentWithReadability(html, url);
 
       return {
         url,
@@ -112,6 +131,7 @@ export class LinkProcessor {
         content: parsed.content,
         description: parsed.description,
         statusCode: response.status,
+        readability: parsed.readability,
       };
     } catch (error) {
       return {
@@ -121,8 +141,58 @@ export class LinkProcessor {
     }
   }
 
-  private parseHtmlContent(html: string): { title?: string; content?: string; description?: string } {
-    // 簡単なHTML解析（本格的な実装ではcheerioなどを使用）
+  private extractContentWithReadability(html: string, url: string): { 
+    title?: string; 
+    content?: string; 
+    description?: string; 
+    readability?: LinkContent['readability'] 
+  } {
+    try {
+      // JSDOMでHTMLを解析
+      const dom = new JSDOM(html, { url });
+      const document = dom.window.document;
+
+      // Readabilityでメインコンテンツを抽出
+      const reader = new Readability(document);
+      const article = reader.parse();
+
+      if (article) {
+        // Readabilityで成功した場合
+        let content = article.textContent;
+        
+        // 長すぎるコンテンツは切り詰め
+        if (content.length > this.MAX_CONTENT_LENGTH) {
+          content = content.substring(0, this.MAX_CONTENT_LENGTH) + '...';
+        }
+
+        // メタディスクリプションを取得
+        const descriptionElement = document.querySelector('meta[name="description"]');
+        const description = descriptionElement?.getAttribute('content')?.trim();
+
+        return {
+          title: article.title,
+          content,
+          description,
+          readability: {
+            byline: article.byline || undefined,
+            siteName: article.siteName || undefined,
+            length: article.length,
+            excerpt: article.excerpt || undefined,
+          },
+        };
+      } else {
+        // Readabilityが失敗した場合、フォールバック処理
+        console.warn(`Readability failed for ${url}, falling back to basic parsing`);
+        return this.fallbackParseHtmlContent(html);
+      }
+    } catch (error) {
+      console.error(`Error extracting content with Readability for ${url}:`, error);
+      return this.fallbackParseHtmlContent(html);
+    }
+  }
+
+  private fallbackParseHtmlContent(html: string): { title?: string; content?: string; description?: string } {
+    // 以前の簡単なHTML解析をフォールバックとして保持
     const titleMatch = html.match(/<title[^>]*>([^<]+)<\/title>/i);
     const title = titleMatch?.[1]?.trim();
 
