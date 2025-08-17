@@ -93,46 +93,6 @@ export function registerCoreServices(container: ServiceContainer, options: Boots
 }
 
 /**
- * RAG関連サービスを登録する
- */
-export function registerRagServices(container: ServiceContainer): void {
-  // OpenAI Embeddings を登録（シングルトン）
-  container.registerSingleton(SERVICES.OPENAI_EMBEDDINGS, (container) => {
-    const config = container.get<Config>(SERVICES.CONFIG);
-    const logger = container.get<Logger>(SERVICES.LOGGER);
-    
-    logger.debug('Creating OpenAI embeddings service');
-    
-    // 動的インポート
-    const { OpenAIEmbeddings } = require('@rag/core');
-    return new OpenAIEmbeddings(config.OPENAI_API_KEY);
-  });
-
-  // Semantic Chunker を登録（シングルトン）
-  container.registerSingleton(SERVICES.SEMANTIC_CHUNKER, (container) => {
-    const geminiClient = container.get<GeminiClient>(SERVICES.GEMINI_CLIENT);
-    const logger = container.get<Logger>(SERVICES.LOGGER);
-    
-    logger.debug('Creating semantic chunker');
-    
-    // 動的インポート
-    const { SemanticChunker } = require('@rag/core');
-    return new SemanticChunker(geminiClient);
-  });
-
-  // Postgres Vector Store を登録（シングルトン）
-  container.registerSingleton(SERVICES.VECTOR_STORE, (container) => {
-    const logger = container.get<Logger>(SERVICES.LOGGER);
-    
-    logger.debug('Creating postgres vector store');
-    
-    // 動的インポート
-    const { PostgresVectorStore } = require('@rag/core');
-    return new PostgresVectorStore();
-  });
-}
-
-/**
  * アプリケーション初期化のブートストラップ
  */
 export function bootstrap(options: BootstrapOptions = {}): {
@@ -148,6 +108,17 @@ export function bootstrap(options: BootstrapOptions = {}): {
   // 基本的なサービスを取得
   const config = container.get<Config>(SERVICES.CONFIG);
   const logger = container.get<Logger>(SERVICES.LOGGER);
+  
+  // データベース接続を即座に初期化（skipDatabaseConnectionが無効の場合）
+  if (!options.skipDatabaseConnection) {
+    try {
+      container.get(SERVICES.DATABASE_CONNECTION);
+      logger.info('Database connection initialized successfully');
+    } catch (error) {
+      logger.error('Failed to initialize database connection during bootstrap', error instanceof Error ? error : undefined);
+      throw error;
+    }
+  }
   
   logger.info('Application bootstrap completed', {
     nodeEnv: config.NODE_ENV,
@@ -169,7 +140,7 @@ export function validateConfiguration(config: Config): void {
     'DISCORD_TOKEN',
     'DATABASE_URL',
     'GEMINI_API_KEY',
-    'OPENAI_API_KEY',
+    // OPENAI_API_KEYはオプショナル（RAG機能で使用）
   ];
 
   const missingKeys = requiredKeys.filter(key => !config[key]);
@@ -180,26 +151,4 @@ export function validateConfiguration(config: Config): void {
       'Please check your .env file.'
     );
   }
-}
-
-/**
- * 設定値をテスト環境用にオーバーライドするヘルパー
- */
-export function createTestConfig(overrides: Partial<Config> = {}): Config {
-  return {
-    DISCORD_TOKEN: 'test-token',
-    DATABASE_URL: 'postgres://test:test@localhost:5433/test',
-    GEMINI_API_KEY: 'test-gemini-key',
-    OPENAI_API_KEY: 'test-openai-key',
-    API_PORT: '3001',
-    NODE_ENV: 'test',
-    LOG_LEVEL: 'error', // テスト時はエラーのみログ出力
-    CHUNK_SIZE: '1000',
-    CHUNK_OVERLAP: '200',
-    MAX_CHUNKS_PER_QUERY: '5',
-    MAX_KEYWORDS: '8',
-    MIN_CONFIDENCE: '0.6',
-    MIN_BM25_SCORE: '0.1',
-    ...overrides,
-  };
 }

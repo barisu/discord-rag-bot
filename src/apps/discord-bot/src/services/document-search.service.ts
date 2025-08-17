@@ -55,7 +55,7 @@ export class DocumentSearchService {
             CASE 
               WHEN ${schema.sourceDocuments.title} IS NOT NULL AND ${this.createTitleMatchCondition(keywords)} THEN 1
               ELSE 0
-            END
+            END AS title_match_score
           `,
         })
         .from(schema.sourceDocuments)

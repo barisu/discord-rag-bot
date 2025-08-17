@@ -1,13 +1,11 @@
 import { Client, GatewayIntentBits, Events } from 'discord.js';
-import { bootstrap, registerRagServices, setContainer, SERVICES } from '@shared/core';
+import { bootstrap, setContainer, SERVICES } from '@shared/core';
 import { InitDbCommand } from './commands/init-db-refactored';
 import { SearchCommand } from './commands/search';
+import { MessageFetcher } from '@shared/core';
 
 // アプリケーションをブートストラップ
 const { container, config, logger } = bootstrap();
-
-// RAGサービスを登録
-registerRagServices(container);
 
 // グローバルコンテナを設定
 setContainer(container);
@@ -23,7 +21,6 @@ const client = new Client({
 
 // DiscordクライアントをMessageFetcherサービス用に登録
 container.registerSingleton(SERVICES.MESSAGE_FETCHER, () => {
-  const { MessageFetcher } = require('@shared/core');
   return new MessageFetcher(client);
 });
 

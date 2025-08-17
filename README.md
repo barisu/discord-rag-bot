@@ -1,103 +1,113 @@
-# Discord RAG Bot
+# Discord 文書検索 Bot
 
-PostgreSQL (Neon) + pgvector を使用したRAG機能付きDiscord Botのモノレポ構成プロジェクト
+PostgreSQL + Drizzle ORM を使用した高速文書検索機能付きDiscord Botのモノレポ構成プロジェクト
 
 ## 概要
 
-このプロジェクトは、Retrieval-Augmented Generation (RAG) 機能を搭載したDiscord Botです。PostgreSQLとpgvectorを使用してベクトル検索を行い、高精度な情報検索を実現します。
+このプロジェクトは、Discord サーバーの過去ログから高品質なコンテンツを抽出・保存し、部分一致検索で関連情報を素早く提供するBotです。Mozilla Readabilityを使用した高品質なコンテンツ抽出と、PostgreSQLのILIKEオペレータによる高速検索を実現しています。
 
 ## 技術スタック
 
-- **言語**: TypeScript
-- **Discord Bot**: discord.js
-- **AI/RAG**: Mastra + OpenAI embeddings
-- **データベース**: PostgreSQL + pgvector (Neon対応)
-- **ORM**: Drizzle ORM
+- **言語**: TypeScript 5.8.3 (ES2022 + ESNext)
+- **Discord Bot**: discord.js v14.14.0
+- **コンテンツ抽出**: Mozilla Readability + JSDOM
+- **データベース**: PostgreSQL 16
+- **ORM**: Drizzle ORM v0.44.3
+- **検索エンジン**: PostgreSQL ILIKEオペレータ
 - **パッケージ管理**: npm workspaces
+- **テスト**: Vitest + Testcontainers
 
 ## プロジェクト構造
 
 ```
 src/
 ├── apps/
-│   └── discord-bot/      # Discord Bot (API内蔵)
+│   └── discord-bot/              # Discord Botアプリケーション
 │       ├── src/
-│       │   ├── api/      # ヘルスチェック用API
-│       │   └── bot.ts    # メインのDiscord Bot
+│       │   ├── commands/          # Discordコマンド
+│       │   │   ├── init-db-refactored.ts  # DB初期化
+│       │   │   └── search.ts              # 文書検索
+│       │   ├── services/          # ビジネスロジック
+│       │   │   ├── document-search.service.ts  # 検索サービス
+│       │   │   ├── content-extraction.service.ts  # コンテンツ抽出
+│       │   │   └── job-management.service.ts  # ジョブ管理
+│       │   └── bot.ts             # メインBot
 └── packages/
-    ├── shared/           # 共有ライブラリ・型定義・DB設定
-    └── rag/              # RAG機能（独立ライブラリ）
+    ├── shared/                   # 共有ライブラリ (@shared/core)
+    │   ├── src/database/         # データベーススキーマ・接続
+    │   ├── src/content/          # コンテンツ処理 (Mozilla Readability)
+    │   ├── src/discord/          # Discord API統合
+    │   └── src/types/            # 型定義
+    └── rag/                      # コンテンツ処理ライブラリ (@rag/core)
+        └── src/chunking/         # テキストチャンキング
 ```
 
-## セットアップ
+## クイックスタート
 
 ### 前提条件
 
 - Node.js 18.0.0以上
-- npm 9.0.0以上
-- Docker & Docker Compose（ローカル開発用）
+- npm 9.0.0以上  
+- Docker & Docker Compose
+- Discord Bot Token (詳細は下記参照)
 
-### ローカル開発環境
+### 5分で始める手順
 
-1. **リポジトリのクローン**
 ```bash
+# 1. リポジトリクローン
 git clone <repository-url>
 cd discord-rag-bot
-```
+git checkout refactor  # 最新の部分一致検索機能
 
-2. **依存関係のインストール**
-```bash
+# 2. 依存関係インストール
 npm install
-```
 
-3. **環境変数の設定**
-```bash
-cp .env.example .env
-# .envファイルを編集して必要な値を設定
-```
-
-4. **PostgreSQL + pgvectorの起動**
-```bash
-# データベースの起動
+# 3. PostgreSQL起動
 npm run docker:up
 
-# ログの確認
-npm run docker:logs
-```
-
-5. **データベースのマイグレーション**
-```bash
-# スキーマファイルの生成
-npm run db:generate
-
-# データベースにマイグレーション適用
+# 4. データベース初期化
 npm run db:migrate
-```
 
-6. **アプリケーションの起動**
-```bash
+# 5. Bot起動 (事前に.env設定が必要)
 npm run dev:discord-bot
 ```
 
-### 環境変数
+> 📚 **詳細な手順**: [docs/setup/local-development.md](docs/setup/local-development.md) を参照
 
-`.env`ファイルで以下を設定：
+## 主要機能
+
+### Discordコマンド
+
+| コマンド | 説明 | 例 |
+|---------|------|-----|
+| `!init-db <カテゴリID>` | 指定カテゴリのメッセージを収集・DB保存 | `!init-db 1234567890123456789` |
+| `!search <クエリ>` | 保存されたドキュメントから検索 | `!search TypeScript エラー処理` |
+
+### 検索機能の特徴
+
+- **高速検索**: PostgreSQL ILIKEオペレータによるミリ秒単位の高速処理
+- **複数キーワード**: スペース区切りでAND検索対応
+- **高品質コンテンツ**: Mozilla Readabilityによる本文抽出
+- **タイトル優先**: タイトルマッチを優先表示
+- **簡潔表示**: 上位5件の関連性高い結果
+
+### 環境変数設定
+
+`src/apps/discord-bot/.env` ファイルを作成：
 
 ```bash
 # Discord Bot設定
 DISCORD_TOKEN=your_discord_bot_token
+GUILD_ID=your_guild_id
+CATEGORY_ID=your_category_id  
+ADMIN_USER_ID=your_user_id
 
-# OpenAI API設定（RAG機能用）
+# データベース設定
+DATABASE_URL=postgres://postgres:postgres@localhost:5432/discord_rag_bot_test
+
+# オプション: コンテンツ抽出用
 OPENAI_API_KEY=your_openai_api_key
-
-# データベース設定（ローカル）
-DATABASE_URL=postgres://postgres:postgres@localhost:5432/discord_rag_bot
-
-# または Neon（本番）
-# DATABASE_URL=postgres://username:password@your-neon-instance.neon.tech/dbname?sslmode=require
-
-# API設定
-API_PORT=3001
+GEMINI_API_KEY=your_gemini_api_key
 ```
 
 ## 開発コマンド
@@ -148,37 +158,108 @@ docker compose --profile admin up -d
 # Password: admin
 ```
 
-## Discord Botコマンド
+## 使用例
 
-- `!ping` - Bot接続確認
-- `!ask <質問>` - RAG機能を使用した質問応答
+### 1. データ収集
+
+```
+!init-db 1234567890123456789
+```
+
+**実行結果:**
+```
+📊 データベース初期化を開始します...
+カテゴリ: 技術討論
+チャンネル数: 5
+
+🔄 進捗: チャンネル 3/5 処理中...
+📝 メッセージ 287件を処理しました
+🔗 リンク 23件を発見し、コンテンツを解析中...
+
+✅ 初期化完了！
+- 処理済みメッセージ: 1,247件
+- 取得済みドキュメント: 67件
+- 実行時間: 4分12秒
+```
+
+### 2. 文書検索
+
+```
+!search React Hook
+```
+
+**検索結果:**
+```
+🔍 検索結果
+クエリ: React Hook
+
+📊 検索統計
+• 検索時間: 34ms
+• 発見件数: 3件
+• 総ドキュメント数: 67件
+
+1. React Hooks 完全ガイド
+URL: https://react.dev/learn/state-a-components-memory
+ドメイン: react.dev
+内容: HooksはReact 16.8で導入された機能で、関数コンポーネントでstateやライフサイクルを扱えるように...
+
+2. useState Hookの使い方
+URL: https://react.dev/reference/react/useState
+ドメイン: react.dev
+内容: useStateはコンポーネントにstate変数を追加するためのReact Hookです...
+```
 
 ## データベーススキーマ
 
 ### 主要テーブル
-- `documents` - RAG用ドキュメント
-- `embeddings` - ベクトル埋め込み（pgvector）
+- `source_documents` - Webコンテンツ保存（メインテーブル）
 - `discord_messages` - Discordメッセージ履歴
-- `rag_queries` - RAGクエリログ
+- `init_jobs` - データ収集ジョブ管理
+- `rag_queries` - 検索クエリログ
+- `documents` - レガシーテーブル
 
-### pgvector機能
-- コサイン類似度検索
-- HNSWインデックスによる高速検索
-- 1536次元ベクトル（OpenAI embedding）対応
+### 検索最適化
+- **インデックス**: URL、メッセージID、作成日時
+- **ILIKEオペレータ**: 高速文字列部分一致検索
+- **タイトル優先ソート**: 関連性の高い結果を優先表示
 
-## 本番環境（Neon）
+## 本番環境へのデプロイ
 
-1. [Neon](https://neon.tech/)でPostgreSQLインスタンス作成
-2. pgvector拡張を有効化
-3. `DATABASE_URL`をNeonの接続文字列に更新
-4. マイグレーション実行
+### PostgreSQLセットアップ
+
+1. **Neon / Railway / Supabase** 等でPostgreSQLインスタンス作成
+2. `DATABASE_URL` を本番環境の接続文字列に更新
+3. マイグレーション実行: `npm run db:migrate`
+
+### Discord Botデプロイ
+
+**推奨プラットフォーム:**
+- **Railway**: シンプルなGitベースデプロイ
+- **Heroku**: 定番のホスティングサービス
+- **VPS**: Docker Composeで自己ホスティング
 
 ## アーキテクチャの特徴
 
-1. **独立したRAGライブラリ**: テスト・再利用が容易
-2. **PostgreSQL + pgvector**: 高性能なベクトル検索
-3. **Drizzle ORM**: タイプセーフなデータベース操作
-4. **モノレポ構成**: 効率的な開発とデプロイ
+### 設計思想
+
+1. **シンプル設計**: RAGの複雑さを排除し、部分一致検索で高速処理
+2. **高品質コンテンツ**: Mozilla Readabilityによる本文抽出
+3. **タイプセーフ**: Drizzle ORM + TypeScriptで型安全性を確保
+4. **モノレポ構成**: 効率的な開発とテスト
+5. **スケーラブル**: PostgreSQLのパフォーマンスとインデックス最適化
+
+## プロジェクト状態
+
+- **完成度**: 約65% (基盤・データ収集・検索機能完了)
+- **テスト**: 84テスト中67テスト通過
+- **現在のブランチ**: `refactor` (部分一致検索システム)
+- **次のマイルストーン**: メンション応答機能の実装
+
+## 関連ドキュメント
+
+- **詳細セットアップ手順**: [docs/setup/local-development.md](docs/setup/local-development.md)
+- **検索システム詳細**: [docs/apps/discord-bot/document-search.md](docs/apps/discord-bot/document-search.md)
+- **プロジェクト全体設計**: [CLAUDE.md](CLAUDE.md)
 
 ## ライセンス
 

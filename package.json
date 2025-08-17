@@ -11,6 +11,7 @@
     "build": "npm run build --workspaces",
     "dev": "npm run dev --workspaces",
     "dev:discord-bot": "npm run dev --workspace=src/apps/discord-bot",
+    "dev:discord-bot:debug": "npm run dev:debug --workspace=src/apps/discord-bot",
     "test": "npm run test --workspaces",
     "test:ui": "vitest --ui",
     "test:coverage": "vitest run --coverage",
@@ -31,19 +32,22 @@
     "docker:logs": "docker compose logs -f postgres"
   },
   "devDependencies": {
+    "@testcontainers/postgresql": "^11.3.1",
     "@types/node": "^24.0.15",
-    "typescript": "^5.8.3",
-    "tsx": "^4.20.3",
-    "eslint": "^9.31.0",
     "@typescript-eslint/eslint-plugin": "^8.37.0",
     "@typescript-eslint/parser": "^8.37.0",
+    "@vitest/ui": "^3.2.4",
     "drizzle-kit": "^0.31.4",
-    "vitest": "^3.2.4",
-    "@testcontainers/postgresql": "^11.3.1",
-    "@vitest/ui": "^3.2.4"
+    "eslint": "^9.31.0",
+    "tsx": "^4.20.3",
+    "typescript": "^5.8.3",
+    "vitest": "^3.2.4"
   },
   "engines": {
     "node": ">=18.0.0",
     "npm": ">=9.0.0"
+  },
+  "dependencies": {
+    "dotenv": "^17.2.1"
   }
 }

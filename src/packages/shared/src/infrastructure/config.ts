@@ -12,7 +12,7 @@ const ConfigSchema = z.object({
   
   // AI API設定
   GEMINI_API_KEY: z.string().min(1, 'GEMINI_API_KEY is required'),
-  OPENAI_API_KEY: z.string().min(1, 'OPENAI_API_KEY is required'),
+  OPENAI_API_KEY: z.string().optional(), // オプショナル（RAG機能で使用、基本機能では不要）
   
   // オプション設定
   API_PORT: z.string().regex(/^\d+$/, 'API_PORT must be a number').default('3001'),
