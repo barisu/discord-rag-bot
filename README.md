@@ -225,18 +225,105 @@ URL: https://react.dev/reference/react/useState
 
 ## 本番環境へのデプロイ
 
+### VPSへの自動デプロイ (GitHub Actions)
+
+このプロジェクトには、mainブランチにプッシュ時に自動でVPSにデプロイするGitHub Actionsワークフローが含まれています。
+
+#### 必要なGitHubシークレット
+
+GitHubリポジトリの Settings > Secrets and variables > Actions で以下のシークレットを設定：
+
+```bash
+HOST           # VPSのIPアドレスまたはホスト名
+USERNAME       # SSH接続用のユーザー名
+SSH_KEY        # SSH秘密鍵（パスワード認証は非推奨）
+PORT           # SSH接続ポート（デフォルト: 22）
+APP_PATH       # アプリケーションのパス（デフォルト: /home/USERNAME/discord-rag-bot）
+```
+
+#### VPS側の前提条件
+
+1. **Node.js 18+** と **npm** がインストールされていること
+2. **PM2** がグローバルにインストールされていること:
+   ```bash
+   npm install -g pm2
+   ```
+3. **Git** がインストールされ、リポジトリがクローンされていること:
+   ```bash
+   git clone <your-repo-url> /home/your-username/discord-rag-bot
+   cd /home/your-username/discord-rag-bot
+   npm install
+   npm run build
+   ```
+4. **SSH鍵認証** が設定されていること
+5. **PostgreSQL** が設定され、`.env` ファイルが配置されていること
+
+#### デプロイフロー
+
+```mermaid
+graph LR
+    A[Push to main] --> B[Run Tests]
+    B --> C[Build Project]
+    C --> D[Deploy to VPS]
+    D --> E[Pull Code]
+    E --> F[Install Dependencies]
+    F --> G[Build Application]
+    G --> H[Run Migrations]
+    H --> I[PM2 Reload]
+    I --> J[Verify Status]
+```
+
+#### PM2設定
+
+プロジェクトには `ecosystem.config.js` ファイルが含まれており、以下のようにPM2を起動できます：
+
+```bash
+# 初回起動
+pm2 start ecosystem.config.js
+
+# 以降の更新時（GitHub Actionsで自動実行）
+pm2 reload discord-rag-bot
+```
+
+#### 手動デプロイ
+
+GitHub Actionsが利用できない場合の手動デプロイ手順：
+
+```bash
+# VPSにSSH接続
+ssh username@your-vps-ip
+
+# アプリケーションディレクトリに移動
+cd /path/to/discord-rag-bot
+
+# 最新コードを取得
+git pull origin main
+
+# 依存関係をインストール
+npm ci --omit=dev
+
+# ビルド実行
+npm run build
+
+# データベースマイグレーション
+npm run db:migrate
+
+# PM2でアプリケーションをリロード
+pm2 reload discord-rag-bot
+```
+
 ### PostgreSQLセットアップ
 
 1. **Neon / Railway / Supabase** 等でPostgreSQLインスタンス作成
 2. `DATABASE_URL` を本番環境の接続文字列に更新
 3. マイグレーション実行: `npm run db:migrate`
 
-### Discord Botデプロイ
+### その他のデプロイオプション
 
-**推奨プラットフォーム:**
+**クラウドプラットフォーム:**
 - **Railway**: シンプルなGitベースデプロイ
 - **Heroku**: 定番のホスティングサービス
-- **VPS**: Docker Composeで自己ホスティング
+- **Docker Compose**: コンテナベースの自己ホスティング
 
 ## アーキテクチャの特徴
 
