@@ -47,9 +47,9 @@ jobs:
           script: |
             cd ${{ secrets.APP_PATH }}
             git pull origin main
-            npm ci --omit=dev
-            pm2 reload discord-rag-bot || pm2 start ecosystem.config.js
-            pm2 status discord-rag-bot
+            /home/ubuntu/.asdf/shims/npm ci --omit=dev
+            /home/ubuntu/.asdf/shims/pm2 reload discord-rag-bot || /home/ubuntu/.asdf/shims/pm2 start ecosystem.config.js
+            /home/ubuntu/.asdf/shims/pm2 status discord-rag-bot
       - name: Notify deployment status
         if: always()
         run: |
