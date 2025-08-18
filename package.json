@@ -8,7 +8,7 @@
     "src/packages/*"
   ],
   "scripts": {
-    "build": "npm run build --workspaces",
+    "build": "npm run build --workspace=src/packages/shared && npm run build --workspaces --if-present",
     "dev": "npm run dev --workspaces",
     "dev:discord-bot": "npm run dev --workspace=src/apps/discord-bot",
     "dev:discord-bot:debug": "npm run dev:debug --workspace=src/apps/discord-bot",
